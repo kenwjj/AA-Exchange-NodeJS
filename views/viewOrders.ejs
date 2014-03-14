@@ -17,27 +17,26 @@
 			</tr>
 		</thead>
 		<tbody>			
-			<% for(var i=0; i<smu.getUnfulfilledBids.length; i++) {%>
+			<% for (var i in smuBids.getUnfulfilledBids){%>
 			<tr><td>Unfulfilled Bids (Buy Orders)</td>	<span></span>		
-				<td><%= smu.getUnfulfilledBids[i].stock %></td>
-				<td><%= smu.getUnfulfilledBids[i].price %></td>
-				<td><%= smu.getUnfulfilledBids[i].username %></td>
-				<td><%= smu.getUnfulfilledBids[i].date %></td>
+				<td><%= smuBids.getUnfulfilledBids[i].stock %></td>
+				<td><%= smuBids.getUnfulfilledBids[i].price %></td>
+				<td><%= smuBids.getUnfulfilledBids[i].bidder %></td>
+				<td><%= smuBids.getUnfulfilledBids[i].time %></td>
 			</tr> 
 			<% } %>
-			<tr><% for(var i=0; i<smu.getUnfulfilledAsks.length; i++) {%>
+			<tr><% for (var i in smuAsks.getUnfulfilledAsks){%>
 				<td>Unfulfilled Asks (Sell Orders)</td>
-				<td><%= smu.getUnfulfilledAsks[i].stock %></td>
-				<td><%= smu.getUnfulfilledAsks[i].price %></td>
-				<td><%= smu.getUnfulfilledAsks[i].username %></td>
-				<td><%= smu.getUnfulfilledAsks[i].date %></td>
+				<td><%= smuAsks.getUnfulfilledAsks[i].stock %></td>
+				<td><%= smuAsks.getUnfulfilledAsks[i].price %></td>
+				<td><%= smuAsks.getUnfulfilledAsks[i].seller %></td>
+				<td><%= smuAsks.getUnfulfilledAsks[i].time %></td>
 			</tr> 
 			<% } %>
 		</tbody>
 	</table>
 
 	<br/><br/>
-
 	<!-- unfulfilled bids of NUS -->
 	<table border="1">
 		<thead>
@@ -50,20 +49,20 @@
 			</tr>
 		</thead>
 		<tbody>
-			<% for(var i=0; i<nus.getUnfulfilledBids.length; i++) {%>
+			<% for (var i in nusBids.getUnfulfilledBids){%>
 			<tr><td>Unfulfilled Bids (Buy Orders)</td>	<span></span>		
-				<td><%= nus.getUnfulfilledBids[i].stock %></td>
-				<td><%= nus.getUnfulfilledBids[i].price %></td>
-				<td><%= nus.getUnfulfilledBids[i].username %></td>
-				<td><%= nus.getUnfulfilledBids[i].date.toString() %></td>
+				<td><%= nusBids.getUnfulfilledBids[i].stock %></td>
+				<td><%= nusBids.getUnfulfilledBids[i].price %></td>
+				<td><%= nusBids.getUnfulfilledBids[i].bidder %></td>
+				<td><%= nusBids.getUnfulfilledBids[i].time %></td>
 			</tr> 
 			<% } %>
-			<tr><% for(var i=0; i<nus.getUnfulfilledAsks.length; i++) {%>
+			<tr><% for (var i in nusAsks.getUnfulfilledAsks){%>
 				<td>Unfulfilled Asks (Sell Orders)</td>
-				<td><%= nus.getUnfulfilledAsks[i].stock %></td>
-				<td><%= nus.getUnfulfilledAsks[i].price %></td>
-				<td><%= nus.getUnfulfilledAsks[i].username %></td>
-				<td><%= nus.getUnfulfilledAsks[i].date.toString() %></td>
+				<td><%= nusAsks.getUnfulfilledAsks[i].stock %></td>
+				<td><%= nusAsks.getUnfulfilledAsks[i].price %></td>
+				<td><%= nusAsks.getUnfulfilledAsks[i].seller %></td>
+				<td><%= nusAsks.getUnfulfilledAsks[i].time %></td>
 			</tr> 
 			<% } %>
 		</tbody>
@@ -83,27 +82,26 @@
 			</tr>
 		</thead>
 		<tbody>
-			<% for(var i=0; i<ntu.getUnfulfilledBids.length; i++) {%>
+			<% for (var i in ntuBids.getUnfulfilledBids){%>
 			<tr><td>Unfulfilled Bids (Buy Orders)</td>	<span></span>		
-				<td><%= ntu.getUnfulfilledBids[i].stock %></td>
-				<td><%= ntu.getUnfulfilledBids[i].price %></td>
-				<td><%= ntu.getUnfulfilledBids[i].userId %></td>
-				<td><%= ntu.getUnfulfilledBids[i].date.toString() %></td>
+				<td><%= ntuBids.getUnfulfilledBids[i].stock %></td>
+				<td><%= ntuBids.getUnfulfilledBids[i].price %></td>
+				<td><%= ntuBids.getUnfulfilledBids[i].bidder %></td>
+				<td><%= ntuBids.getUnfulfilledBids[i].time %></td>
 			</tr> 
 			<% } %>
-			<tr><% for(var i=0; i<ntu.getUnfulfilledAsks.length; i++) {%>
+			<tr><% for (var i in ntuAsks.getUnfulfilledAsks){%>
 				<td>Unfulfilled Asks (Sell Orders)</td>
-				<td><%= ntu.getUnfulfilledAsks[i].stock %></td>
-				<td><%= ntu.getUnfulfilledAsks[i].price %></td>
-				<td><%= ntu.getUnfulfilledAsks[i].username %></td>
-				<td><%= ntu.getUnfulfilledAsks[i].date.toString() %></td>
+				<td><%= ntuAsks.getUnfulfilledAsks[i].stock %></td>
+				<td><%= ntuAsks.getUnfulfilledAsks[i].price %></td>
+				<td><%= ntuAsks.getUnfulfilledAsks[i].seller %></td>
+				<td><%= ntuAsks.getUnfulfilledAsks[i].time %></td>
 			</tr> 
 			<% } %>
 		</tbody>
 	</table>	
 
 	<br/><br/>
-
 	<!-- show remaining credit of each buyer -->
 	Remaining Credit of Each User
 	<table border="1">

@@ -4,6 +4,7 @@ var cluster = require('cluster');
 if (cluster.isMaster) {
     // Count the machine's CPUs
     var cpuCount = require('os').cpus().length;
+    // cpuCount = 1;
     console.log('CPU Count: '+ cpuCount);
     // Create a worker for each CPU
     for (var i = 0; i < cpuCount; i += 1) {
@@ -27,11 +28,16 @@ if (cluster.isMaster) {
     // remember to ensure the library uses ndb for the engine
     options = {
         pool: true,
+        // config: {
+        //     user: 'root',
+        //     password: '',
+        //     database: 'exchange',
+        //     port: '7000'
+        // }
         config: {
-            user: 'root',
-            password: '',
-            database: 'exchange',
-            port: '7000'
+            user: 'user',
+            password: 'user',
+            database: 'exchange'
         }
     };
 

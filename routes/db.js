@@ -29,12 +29,12 @@ var poolCluster = mysql.createPoolCluster(clusterConfig);
 poolCluster.add('MASTER', masterConfig);
 poolCluster.add('SLAVE', slaveConfig);
 poolCluster.getConnection('MASTER', 'ORDER', function (err, connection) {
-	connection.query('select credit_limit from credit;', function(err, docs) {
-					// console.log(docs);
-					if(!isEmptyObject(docs)){
-						console.log("DB Connected @ "+connection.config.host+":"+connection.config.port+"!");
-					}
-				});
+	// connection.query('select credit_limit from credit;', function(err, docs) {
+	// 				// console.log(docs);
+	// 				if(!isEmptyObject(docs)){
+	// 					console.log("DB Connected @ "+connection.config.host+":"+connection.config.port+"!");
+	// 				}
+	// 			});
 
 	callback(connection);
 
