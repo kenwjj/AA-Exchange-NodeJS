@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Show Unfulfilled Orders</title>
+</head>
+<BODY>
+	<!-- unfulfilled bids of SMU -->
+	<table border="1">
+		<thead>
+			<tr>
+				<th>For SMU</th>
+				<th>Stock</th>
+				<th>Price</th>
+				<th>Username</th>
+				<th>Date</th>
+			</tr>
+		</thead>
+		<tbody>			
+			<% for(var i=0; i<smu.getUnfulfilledBids.length; i++) {%>
+			<tr><td>Unfulfilled Bids (Buy Orders)</td>	<span></span>		
+				<td><%= smu.getUnfulfilledBids[i].stock %></td>
+				<td><%= smu.getUnfulfilledBids[i].price %></td>
+				<td><%= smu.getUnfulfilledBids[i].username %></td>
+				<td><%= smu.getUnfulfilledBids[i].date %></td>
+			</tr> 
+			<% } %>
+			<tr><% for(var i=0; i<smu.getUnfulfilledAsks.length; i++) {%>
+				<td>Unfulfilled Asks (Sell Orders)</td>
+				<td><%= smu.getUnfulfilledAsks[i].stock %></td>
+				<td><%= smu.getUnfulfilledAsks[i].price %></td>
+				<td><%= smu.getUnfulfilledAsks[i].username %></td>
+				<td><%= smu.getUnfulfilledAsks[i].date %></td>
+			</tr> 
+			<% } %>
+		</tbody>
+	</table>
+
+	<br/><br/>
+
+	<!-- unfulfilled bids of NUS -->
+	<table border="1">
+		<thead>
+			<tr>
+				<th>For NUS</th>
+				<th>Stock</th>
+				<th>Price</th>
+				<th>Username</th>
+				<th>Date</th>
+			</tr>
+		</thead>
+		<tbody>
+			<% for(var i=0; i<nus.getUnfulfilledBids.length; i++) {%>
+			<tr><td>Unfulfilled Bids (Buy Orders)</td>	<span></span>		
+				<td><%= nus.getUnfulfilledBids[i].stock %></td>
+				<td><%= nus.getUnfulfilledBids[i].price %></td>
+				<td><%= nus.getUnfulfilledBids[i].username %></td>
+				<td><%= nus.getUnfulfilledBids[i].date.toString() %></td>
+			</tr> 
+			<% } %>
+			<tr><% for(var i=0; i<nus.getUnfulfilledAsks.length; i++) {%>
+				<td>Unfulfilled Asks (Sell Orders)</td>
+				<td><%= nus.getUnfulfilledAsks[i].stock %></td>
+				<td><%= nus.getUnfulfilledAsks[i].price %></td>
+				<td><%= nus.getUnfulfilledAsks[i].username %></td>
+				<td><%= nus.getUnfulfilledAsks[i].date.toString() %></td>
+			</tr> 
+			<% } %>
+		</tbody>
+	</table>
+
+	<br/><br/>
+
+	<!-- unfulfilled bids of NTU -->
+	<table border="1">
+		<thead>
+			<tr>
+				<th>For NTU</th>
+				<th>Stock</th>
+				<th>Price</th>
+				<th>Username</th>
+				<th>Date</th>
+			</tr>
+		</thead>
+		<tbody>
+			<% for(var i=0; i<ntu.getUnfulfilledBids.length; i++) {%>
+			<tr><td>Unfulfilled Bids (Buy Orders)</td>	<span></span>		
+				<td><%= ntu.getUnfulfilledBids[i].stock %></td>
+				<td><%= ntu.getUnfulfilledBids[i].price %></td>
+				<td><%= ntu.getUnfulfilledBids[i].userId %></td>
+				<td><%= ntu.getUnfulfilledBids[i].date.toString() %></td>
+			</tr> 
+			<% } %>
+			<tr><% for(var i=0; i<ntu.getUnfulfilledAsks.length; i++) {%>
+				<td>Unfulfilled Asks (Sell Orders)</td>
+				<td><%= ntu.getUnfulfilledAsks[i].stock %></td>
+				<td><%= ntu.getUnfulfilledAsks[i].price %></td>
+				<td><%= ntu.getUnfulfilledAsks[i].username %></td>
+				<td><%= ntu.getUnfulfilledAsks[i].date.toString() %></td>
+			</tr> 
+			<% } %>
+		</tbody>
+	</table>	
+
+	<br/><br/>
+
+	<!-- show remaining credit of each buyer -->
+	Remaining Credit of Each User
+	<table border="1">
+		<thead>
+			<tr>
+				<th>User ID</th>
+				<th>Remaining credit</th>
+			</tr>
+		</thead>
+		<tbody>
+			<% for(var i=0; i<getAllCreditRemainingForDisplay.length; i++) {%>
+			<tr><td><%= getAllCreditRemainingForDisplay[i].userid %></td>
+				<td><%= getAllCreditRemainingForDisplay[i].credit_limit %></td></tr> 
+				<% } %>
+
+			</tbody>
+		</table>
+		<hr/>
+		Functions available:<br/>
+		<ul>
+			<li><a href="buy.html">Buy</a></li>
+			<li><a href="sell.html">Sell</a></li>
+			<li><a href="logout.html">Log out</a></li>
+			<li><a href="current.html">Current stats</a></li>
+			<li><a href="viewOrders.html">Unfulfilled orders</a></li>
+		</ul>
+	</BODY>
+	</html>

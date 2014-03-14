@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Buy Fail</title>
+
+  </head>
+
+   <BODY>
+        <FORM name="myform">
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Rejection of Buy Order</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                      <td> The following buy order has been REJECTED because your credit limit has been breached</td>
+                    </tr>
+                   <tr>
+                        <td>User ID</td>
+                        <td><%=session.username%></td>
+                    </tr>
+                    <tr>
+                        <td>Quantity</td>
+                        <td>1000</td>
+                    </tr>
+                    <tr>
+                        <td>Stock to buy</td>
+                        <td><%=stock%></td>
+
+                    </tr>
+                    <tr>
+                        <td>Bid Price</td>
+                        <td><%=bidPrice%></td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </FORM>
+    <hr/>
+    Functions available:<br/>
+    <ul>
+        <li><a href="buy.html">Buy</a></li>
+        <li><a href="sell.html">Sell</a></li>
+        <li><a href="logout.html">Log out</a></li>
+        <li><a href="current.html">Current stats</a></li>
+        <li><a href="viewOrders.html">Unfulfilled orders</a></li>
+    </ul>
+    </BODY>
+</html>
