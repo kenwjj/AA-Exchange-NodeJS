@@ -34,4 +34,11 @@ config.slavepass = 'user';
 
 config.secret = '1234567890QWERTY';
 
+config.username ='G1T1';
+config.password ='pistachio';
+config.soapURLPrimary = 'http://10.0.106.239:81/aabo/Service.asmx?wsdl';
+config.soapURLSecondary = 'http://10.4.12.30:81/aabo/Service.asmx?wsdl';
+
+config.matchedLocation = '"./logs/matched.log"';
+config.rejectedLocation = './logs/rejected.log';
 module.exports = config;

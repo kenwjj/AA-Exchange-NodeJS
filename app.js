@@ -19,7 +19,7 @@ if (cluster.isMaster) {
         console.log('Worker ' + worker.id + ' died :(');
             cluster.fork();
 
-    });
+        });
 // Code to run if we're in a worker process
 } else {
     // Required
@@ -51,6 +51,7 @@ if (cluster.isMaster) {
     var routes = require('./routes/routes');
     var auth = require('./routes/auth');
     var config = require('./config/config');
+    var bo = require('./routes/backoffice');
     var app = express();
 
     // view engine setup
@@ -82,6 +83,7 @@ if (cluster.isMaster) {
     app.post('/processlogin',routes.processlogin);
     app.post('/processbuy',auth,routes.processbuy);
     app.post('/processsell',auth,routes.processsell);
+    // app.get('/test',bo.sendToBackOffice);
 
     /// catch 404 and forwarding to error handler
     app.use(function(req, res, next) {

@@ -1,14 +1,16 @@
 var async = require('async');
 var fs = require('fs');
 var soap = require('soap');
+var config = require('../config/config');
+var bo = require('./backoffice');
 
 var creditLimit = 1000000;
 var unfulfilledBids = [];
 var unfulfilledAsks = [];
 var matchedTransactions = [];logMatchedTransactions
 var latestSmuPrice = -1, latestNtuPrice = -1, latestNusPrice = -1;
-var matchedLocation = "./logs/matched.log";
-var rejectedLocation = "./logs/rejected.log";
+var matchedLocation = config.matchedLocation;
+var rejectedLocation = config.rejectedLocation;
 
 
 exports.placeNewBidAndAttemptMatch = function(bid,callback){
@@ -663,7 +665,6 @@ exports.getAllCreditRemainingForDisplay = function (callback){
 		});
 };
 
-
 exports.endTradingDay = function(){
     // reset attributes
     latestPriceForSmu = -1;
@@ -694,6 +695,13 @@ exports.endTradingDay = function(){
     							console.log('Ask Cleared!');
     						}
 
+    						// Send to BackOffice
+    						var status = bo.sendToBackOffice();
+    						if(status){
+    							console.log('Successfully sent to back office!');
+    						}else{
+    							console.log('Soething went wrong with BackOffice operation!');
+    						}
     					});
     				}
 
@@ -766,19 +774,6 @@ function updateAskMatch(ask, callback){
 			});
 		});
 }
-
-
-
-/*
- var soap = require('soap');
-  var url = 'http://example.com/wsdl?wsdl';
-  var args = {name: 'value'};
-  soap.createClient(url, function(err, client) {
-      client.MyFunction(args, function(err, result) {
-          console.log(result);
-      });
-  });
-*/
 
 function isEmptyObject(obj) {
 	return !Object.keys(obj).length;
