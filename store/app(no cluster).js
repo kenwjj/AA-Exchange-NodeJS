@@ -1,28 +1,4 @@
-
-var cluster = require('cluster');
-// Code to run if we're in the master process
-if (cluster.isMaster) {
-    // Count the machine's CPUs
-    var cpuCount = require('os').cpus().length;
-    // cpuCount = 1;
-    console.log('CPU Count: '+ cpuCount);
-    // Create a worker for each CPU
-    for (var i = 0; i < cpuCount; i += 1) {
-        cluster.fork();
-    }
-
-    // Listen for dying workers
-    cluster.on('exit', function (worker) {
-
-        // Replace the dead worker,
-        // we're not sentimental
-        console.log('Worker ' + worker.id + ' died :(');
-            cluster.fork();
-
-        });
-// Code to run if we're in a worker process
-} else {
-    // Required
+// Required
     var express = require('express');
     var  MySQLStore = require('connect-mysql')(express),
     // remember to ensure the library uses ndb for the engine
@@ -121,7 +97,4 @@ if (cluster.isMaster) {
       console.log('Express server listening on port ' + server.address().port);
       console.log('Worker ' + cluster.worker.id + ' running!');
   });
-    
-
-}
-module.exports = app;
+    module.exports = app;

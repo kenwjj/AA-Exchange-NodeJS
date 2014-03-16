@@ -52,6 +52,6 @@ function checkConnection(url){
 		if(err){
 			return false;
 		}
-	}
+	});
 	return true;
 }
