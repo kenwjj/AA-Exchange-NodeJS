@@ -9,7 +9,7 @@ db.connection(function(connection){
 	var creditLimit = 1000000;
 	var unfulfilledBids = [];
 	var unfulfilledAsks = [];
-	var matchedTransactions = [];logMatchedTransactions
+	var matchedTransactions = [];
 	var latestSmuPrice = -1, latestNtuPrice = -1, latestNusPrice = -1;
 	var matchedLocation = config.matchedLocation;
 	var rejectedLocation = config.rejectedLocation;
@@ -301,7 +301,7 @@ function validateCreditLimit(bid, callback) {
 // returns null if there is no unfulfiled bid for this stock
 function getHighestBid(stock,callback) {
 
-	var query = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by time asc limit 1;" ;
+	var query = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1 for update;" ;
 	// async.series([
 		// function(callback){
 		// 	var db = require('./db');
@@ -336,7 +336,7 @@ function getHighestBid(stock,callback) {
 // returns -1 if there is no ask at all
 function getLowestAsk(stock,callback) {
 
-	var query = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by time asc limit 1;";
+	var query = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by price asc, time asc limit 1 for update;";
 
 	// async.series([
 	// 	function(callback){

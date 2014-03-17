@@ -11,8 +11,6 @@ var config = require('./config/config');
 var bo = require('./routes/backoffice');
 var express = require('express');
 var  MySQLStore = require('connect-mysql')(express);
-console.log(config);
-// Code to run if we're in the master process
 if (cluster.isMaster && config.clustering) {
     // Count the machine's CPUs
     var cpuCount = require('os').cpus().length;

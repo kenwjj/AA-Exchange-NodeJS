@@ -2,9 +2,9 @@ var config = {};
 
 config.mode = 'actual';
 config.clustering = true;
+config.database = 'exchange';
 
 if(config.mode ==='local'){
-	config.database = 'exchange';
 	config.masterdbhost = 'localhost';
 	config.masterdbport = 3306;
 	config.masterlogin = 'user';
