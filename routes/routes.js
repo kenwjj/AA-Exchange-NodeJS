@@ -219,6 +219,13 @@ exports.end = function(req, res){
 	res.render('endTradingDay');
 };
 
+
+exports.matchlog = function(req, res){
+	var match = req.query.match;
+	controller.logMatchedTransactions(match,'rep');
+	res.json({ status: 'true' });
+};
+
 exports.appendLocalsToUseInViews = function(req, res, next){
 
 	res.locals.request = req;

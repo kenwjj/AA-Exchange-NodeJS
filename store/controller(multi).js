@@ -7,7 +7,7 @@ var bo = require('./backoffice');
 var creditLimit = 1000000;
 var unfulfilledBids = [];
 var unfulfilledAsks = [];
-var matchedTransactions = [];logMatchedTransactions
+var matchedTransactions = [];
 var latestSmuPrice = -1, latestNtuPrice = -1, latestNusPrice = -1;
 var matchedLocation = config.matchedLocation;
 var rejectedLocation = config.rejectedLocation;
@@ -306,6 +306,7 @@ function getHighestBid(stock,callback) {
 			var connection = db.connection(callback);
 		}],function(connection){
 			connection.query(query,[stock], function(err, docs) {
+				connection.release();
 				callback(docs);
 			});
 		});
@@ -343,6 +344,7 @@ function getLowestAsk(stock,callback) {
 		}],function(connection){
 			connection.query(query,[stock], function(err, docs) {
 				// console.log(docs);
+				connection.release();
 				callback(docs);
 			});
 		});
@@ -381,15 +383,19 @@ function logRejectedBuyOrder(bid) {
 			
 			console.log("Reject recorded!\n"+bidString);
 		}
+	});
+	
+	sendRequest(config.host,match,function(text){
+
+		console.log(text);
 	}); 
 }
+
+exports.logMatchedTransactions = function(match){
+	logMatchedTransactions(match);
+};
 function logMatchedTransactions(match) {
-	// var matchString = "",
-	// matchLength = matchedTransactions.length;
-	// while (matchLength--) {
-	// 	var match = matchedTransactions.shift();
-	// 	matchString += "stock: " + match.stock + ", price: " + match.price + ", userId: " + match.userId + ", date: " + match.date.toString() + "\n";
-	// }
+
 	var matchString = "stock: " + match.stock + ", price: " + match.price + ", bidder userId: " + match.highestBid.bidder + ", seller userId: " + match.lowestAsk.seller +", date: " + match.date.toString() + "\r\n";
 	fs.appendFile(matchedLocation, matchString, function(err) {
 		if(err) {
@@ -400,7 +406,23 @@ function logMatchedTransactions(match) {
 		}
 	}); 
 }
+function sendRequest(host,match,callback){
+	var http = require('http');
+	var host = config.hosts[0];
+	var options = {
+		host: host,
+		path: '?match='+match
+	};
 
+	http.get(options, function(resp){
+		resp.on('data', function(chunk){
+    	//do something with chunk
+    	callback(chunk);
+    });
+	}).on("error", function(e){
+		console.log("Got error: " + e.message);
+	});
+}
 // DB Functions
 function getCreditRemaining(username,callback) {
 	async.series([
@@ -425,6 +447,7 @@ function getCreditRemaining(username,callback) {
 			docs.push(obj);
 			// console.log(docs);
 		}
+		connection.release();
 		callback(docs[0]);
 		// return docs;
 	});
@@ -448,6 +471,7 @@ function setCreditRemaining (username,credit_limit) {
 		} else{
 			// console.log("error 2 "+err);
 		}
+		connection.release();
 		return docs;
 		// callback(docs[0]);
 	});
@@ -472,6 +496,7 @@ function insertCreditRemaining (username,credit_limit) {
 			// console.log("error 2 "+err);
 		}
 		console.log("insertCreditRemaining: "+docs);
+		connection.release();
 		return docs;
 		// callback(docs[0]);
 	});
@@ -486,6 +511,7 @@ exports.getLatestPrice = function(stock,callback) {
 			var connection = db.connection(cb);
 		}],function(connection){
 			connection.query(query,[stock,stock], function(err, docs) {
+				connection.release();
 				if(isEmptyObject(docs)){
 					callback('-1');
 				}else{
@@ -503,6 +529,7 @@ exports.getHighestBidPrice = function(stock,callback) {
 			var connection = db.connection(callback);
 		}],function(connection){
 			connection.query(query,[stock], function(err, docs) {
+				connection.release();
 				if(isEmptyObject(docs)){
 					callback('-1');
 				}else{
@@ -520,6 +547,7 @@ exports.getLowestAskPrice = function(stock,callback) {
 			var connection = db.connection(callback);
 		}],function(connection){
 			connection.query(query,[stock], function(err, docs) {
+				connection.release();
 				if(isEmptyObject(docs)){
 					callback('-1');
 				}else{
@@ -561,6 +589,7 @@ exports.getUnfulfilledBidsAll = function(callback){
 		function(connection){
 			connection.query(query, function(err, docs) {
 				if(!err){
+					connection.release();
 					callback(docs);
 				}
 			});
@@ -579,6 +608,7 @@ exports.getUnfulfilledAsksAll = function(callback){
 		function(connection){
 			connection.query(query, function(err, docs) {
 				if(!err){
+					connection.release();
 					callback(docs);
 				}
 			});
@@ -604,6 +634,7 @@ exports.getUnfulfilledBids = function(stock,callback){
 					if(!err){
 			// console.log("docs 1");
 			// console.log(docs);
+			connection.release();
 			callback(docs);
 		}else{
 			console.log("error 1 "+err);
@@ -644,6 +675,7 @@ exports.getUnfulfilledAsks = function(stock,callback){
 		}],function(connection){
 			var returnString = '';
 			connection.query(query,[stock], function(err, docs) {
+				connection.release();
 				callback(docs);
 			});
 		});
@@ -659,6 +691,7 @@ exports.getAllCreditRemainingForDisplay = function (callback){
 		}],function(connection){
 			var returnString = '';
 			connection.query('select * from credit', function(err, docs) {
+				connection.release();
 				callback(docs);
 
 			});
@@ -703,6 +736,7 @@ exports.endTradingDay = function(){
     							console.log('Soething went wrong with BackOffice operation!');
     						}
     					});
+    					connection.release();
     				}
 
     			});
@@ -720,6 +754,7 @@ function addBid(bid, callback){
 		}],function(connection){
 			
 			connection.query(query,[bid.username, bid.stock, bid.price, bid.date, bid.status], function(err, docs) {
+				connection.release();
 				callback(docs);
 			});
 		});
@@ -733,6 +768,7 @@ function addAsk(ask, callback){
 			var connection = db.connection(callback);
 		}],function(connection){
 			connection.query(query,[ask.username, ask.stock, ask.price, ask.date, ask.status], function(err, docs) {
+				connection.release();
 				callback(docs);
 			});
 		});
@@ -746,6 +782,7 @@ function addMatch(match, callback){
 			var connection = db.connection(callback);
 		}],function(connection){
 			connection.query(query,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
+				connection.release();
 				callback(docs);
 			});
 		});
@@ -758,6 +795,7 @@ function updateBidMatch(bid, callback){
 			var connection = db.connection(callback);
 		}],function(connection){
 			connection.query(query,[bid.id], function(err, docs) {
+				connection.release();
 				callback(docs);
 			});
 		});
@@ -770,6 +808,7 @@ function updateAskMatch(ask, callback){
 			var connection = db.connection(callback);
 		}],function(connection){
 			connection.query(query,[ask.id], function(err, docs) {
+				connection.release();
 				callback(docs);
 			});
 		});

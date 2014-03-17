@@ -5,7 +5,7 @@ var soapURLSecondary = config.soapURLSecondary;
 var fs = require('fs');
 var filename = config.matchedLocation;
 
-exports.sendToBackOffice = function(){
+exports.sendToBackOffice = function(callback){
 
 	var url = soapURLPrimary;
 	if(!checkConnection(soapURLPrimary)){
@@ -30,21 +30,23 @@ exports.sendToBackOffice = function(){
 			if(err){
 				console.log('Client connect error');
 				console.log(err);
-				return false;
+				callback(false);
+			}else{
+				client.ProcessTransaction (args,function(err, result) {
+					if(err){
+						console.log(err);
+					callback(false);
+					}else{
+						console.log(result);
+					}
+
+				});
 			}
-			client.ProcessTransaction (args,function(err, result) {
-				if(err){
-					console.log(err);
-					return false;
-				}else{
-					console.log(result);
-				}
-				
-			});
+			
 		});
 
 	});
-	return true;
+	callback(true);
 };
 
 function checkConnection(url){

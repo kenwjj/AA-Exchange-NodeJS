@@ -1,5 +1,16 @@
 
 var cluster = require('cluster');
+var http = require('http');
+var path = require('path');
+var favicon = require('static-favicon');
+var logger = require('morgan');
+var cookieParser = require('cookie-parser');
+var bodyParser = require('body-parser');
+
+var routes = require('./routes/routes');
+var auth = require('./routes/auth');
+var config = require('./config/config');
+var bo = require('./routes/backoffice');
 // Code to run if we're in the master process
 if (cluster.isMaster) {
     // Count the machine's CPUs
@@ -24,34 +35,30 @@ if (cluster.isMaster) {
 } else {
     // Required
     var express = require('express');
-    var  MySQLStore = require('connect-mysql')(express),
+    var  MySQLStore = require('connect-mysql')(express);
     // remember to ensure the library uses ndb for the engine
-    options = {
-        pool: true,
-        config: {
-            user: 'root',
-            password: '',
-            database: 'exchange',
-            port: '7000'
-        }
-        // config: {
-        //     user: 'user',
-        //     password: 'user',
-        //     database: 'exchange'
-        // }
-    };
+    var options = {};
+    if(config.mode ==='local'){
+        options = {
+            pool: true,
+            config: {
+                user: 'user',
+                password: 'user',
+                database: 'exchange'
+            }
+        };
+    }else{
+        options = {
+            pool: true,
+            config: {
+                user: 'user',
+                password: 'user',
+                database: 'exchange'
+            }
+        };
+    }
 
-    var http = require('http');
-    var path = require('path');
-    var favicon = require('static-favicon');
-    var logger = require('morgan');
-    var cookieParser = require('cookie-parser');
-    var bodyParser = require('body-parser');
-
-    var routes = require('./routes/routes');
-    var auth = require('./routes/auth');
-    var config = require('./config/config');
-    var bo = require('./routes/backoffice');
+    
     var app = express();
 
     // view engine setup
@@ -83,7 +90,7 @@ if (cluster.isMaster) {
     app.post('/processlogin',routes.processlogin);
     app.post('/processbuy',auth,routes.processbuy);
     app.post('/processsell',auth,routes.processsell);
-    // app.get('/test',bo.sendToBackOffice);
+    app.get('/matchlog',routes.matchlog);
 
     /// catch 404 and forwarding to error handler
     app.use(function(req, res, next) {
