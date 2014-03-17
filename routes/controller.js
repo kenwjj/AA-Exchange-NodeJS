@@ -9,11 +9,10 @@ db.connection(function(connection){
 	var creditLimit = 1000000;
 	var unfulfilledBids = [];
 	var unfulfilledAsks = [];
-	var matchedTransactions = [];logMatchedTransactions
+	var matchedTransactions = [];
 	var latestSmuPrice = -1, latestNtuPrice = -1, latestNusPrice = -1;
 	var matchedLocation = config.matchedLocation;
 	var rejectedLocation = config.rejectedLocation;
-
 
 	exports.placeNewBidAndAttemptMatch = function(bid,callback){
 	// var okToContinue;
@@ -59,7 +58,11 @@ db.connection(function(connection){
 
 						// step 3: identify the current/highest bid in unfulfilledBids of the
 						// same stock
-						getHighestBid(bid.stock,function(highestBid){
+
+						connection.beginTransaction(function(err) {
+							if (err) { throw err; }
+							getHighestBid(bid.stock,function(highestBid){
+
 							// step 4: identify the current/lowest ask in unfulfilledAsks of the
 							// same stock
 							getLowestAsk(bid.stock, function(lowestAsk){
@@ -82,6 +85,14 @@ db.connection(function(connection){
 											updateAskMatch(lowestAsk[0], function(status2){
 												updateLatestPrice(match);
 												logMatchedTransactions(match);
+												connection.commit(function(err) {
+													if (err) { 
+														connection.rollback(function() {
+															throw err;
+														});
+													}
+													console.log('success!');
+												});
 												callback(true);
 											});
 
@@ -91,11 +102,20 @@ db.connection(function(connection){
 
 
 								}
+								connection.commit(function(err) {
+									if (err) { 
+										connection.rollback(function() {
+											throw err;
+										});
+									}
+									console.log('success!');
+								});
 								callback(true);
 							});
 
 
-						});						
+});
+});						
 
 });
 
@@ -107,48 +127,7 @@ db.connection(function(connection){
 );
 
 };
-	// var count = 0;
-	// for (var i = 0; i < unfulfilledAsks.length; i++) {
-	// 	if (unfulfilledAsks[i].stock === bid.stock) {
-	// 		count++;
-	// 	}
-	// }
 
-	// // not in list just return no matches
-	// if (count === 0) {
-	// 	status = true;
-	// }
-
-	// // given a particular stock find the highest bid price
-	// var highestBid = getHighestBid(bid.stock),
-
-	// // given the stock find the lowest ask price
-	// lowestAsk = getLowestAsk(bid.stock);
-
-
-	// if (typeof lowestAsk !== 'undefined' && typeof highestBid !== 'undefined' && highestBid.price >= lowestAsk.price) {
-	// 	var bidIndex = unfulfilledBids.indexOf(highestBid),
-	// 	askIndex = unfulfilledAsks.indexOf(lowestAsk);
-
-	// 	unfulfilledBids.splice(bidIndex, 1);
-	// 	unfulfilledAsks.splice(askIndex, 1);
-
-	// 	var match = {
-	// 		highestBid: highestBid,
-	// 		lowestAsk: lowestAsk,
-	// 		date: lowestAsk.date,
-	// 		price: highestBid.price,
-	// 		stock: highestBid.stock
-	// 	};
-	// 	matchedTransactions.push(match);
-	// 	updateLatestPrice(match);
-	// 	logMatchedTransactions();
-	// }
-
-	// status = true;
-	// callback(status);
-
-// });
 exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 
 
@@ -211,50 +190,7 @@ exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 }
 
 );
-// async.series([
-// 	function(callback){
-// 		validateCreditLimit(ask, callback);
-// 	}],function(okToContinue){
-// 		var status;
-// 		if (!okToContinue) {
-// 			status = false;
-// 			callback(status);
-// 		}
-// 		unfulfilledAsks.push(ask);
 
-// 		var count = 0;
-// 		for (var i = 0; i < unfulfilledBids.length; i++) {
-// 			if (unfulfilledBids[i].stock === ask.stock) {
-// 				count++;
-// 			}
-// 		}
-// 		if (count === 0) {
-// 			status = true;
-// 		}
-
-// 		var highestBid = getHighestBid(ask.stock),
-// 		lowestAsk = getLowestAsk(ask.stock);
-// 		if (typeof lowestAsk !== 'undefined' && typeof highestBid !== 'undefined' && lowestAsk.price <= highestBid.price) {
-// 			var bidIndex = unfulfilledBids.indexOf(highestBid),
-// 			askIndex = unfulfilledAsks.indexOf(lowestAsk);
-
-// 			unfulfilledBids.splice(bidIndex, 1);
-// 			unfulfilledAsks.splice(askIndex, 1);
-
-// 			var match = {
-// 				highestBid: highestBid,
-// 				lowestAsk: lowestAsk,
-// 				date: lowestAsk.date,
-// 				price: highestBid.price,
-// 				stock: highestBid.stock
-// 			};
-// 			matchedTransactions.push(match);
-// 			updateLatestPrice(match);
-// 			logMatchedTransactions();
-// 		}
-// 		status = true;
-// 		callback(status);
-// 	});
 };
 
 
@@ -302,76 +238,23 @@ function validateCreditLimit(bid, callback) {
 function getHighestBid(stock,callback) {
 
 	var query = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by time asc limit 1;" ;
-	// async.series([
-		// function(callback){
-		// 	var db = require('./db');
-		// 	var connection = db.connection(callback);
-		// }],function(connection){
-			connection.query(query,[stock], function(err, docs) {
-				callback(docs);
-			});
-		// });
 
-	// var highestBid = {
-	// 	price: 0
-	// };
-	// for (var i = 0; i < unfulfilledBids.length; i++) {
-	// 	var bid = unfulfilledBids[i];
-	// 	if (bid.stock === stock && bid.price >= highestBid.price) {
-	// 		if (bid.price === highestBid.price) {
-	// 			if (bid.date.getTime() < highestBid.date.getTime()) {
-	// 				highestBid = bid;
-	// 			}
-	// 		} else {
-	// 			highestBid = bid;
-	// 		}
-	// 	}
-	// }
-	// if (typeof highestBid.userId === 'undefined') {
-	// 	return;
-	// }
-	// return highestBid;
+	connection.query(query,[stock], function(err, docs) {
+		callback(docs);
+	});
+
 }
 // returns the lowest ask for a particular stock
 // returns -1 if there is no ask at all
 function getLowestAsk(stock,callback) {
 
 	var query = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by time asc limit 1;";
+	connection.query(query,[stock], function(err, docs) {
+		// console.log(docs);
+		callback(docs);
+	});
 
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		var connection = db.connection(callback);
-	// 	}],function(connection){
-		connection.query(query,[stock], function(err, docs) {
-				// console.log(docs);
-				callback(docs);
-			});
-		// });
-
-
-
-	// var lowestAsk = {
-	// 	price: 999999
-	// };
-	// for (var i = 0; i < unfulfilledAsks.length; i++) {
-	// 	var ask = unfulfilledAsks[i];
-	// 	if (ask.stock === stock && ask.price <= lowestAsk.price) {
-	// 		if (ask.price === lowestAsk.price) {
-	// 			if (ask.date.getTime() < lowestAsk.date.getTime()) {
-	// 				lowestAsk = ask;
-	// 			}
-	// 		} else {
-	// 			lowestAsk = ask;
-	// 		}
-	// 	}
-	// }
-	// if (typeof lowestAsk.userId === 'undefined') {
-	// 	return;
-	// }
-	// return lowestAsk;
 }
-
 
 // Logging
 function logRejectedBuyOrder(bid) {
@@ -410,12 +293,6 @@ function logMatchedTransactions(match,rep) {
 			});
 		}
 	}); 
-
-
-	// make request to sync with other hosts
-
-	
-
 }
 function sendRequest(host,matchString,callback){
 	var http = require('http');
@@ -446,16 +323,9 @@ function sendRequest(host,matchString,callback){
 }
 // DB Functions
 function getCreditRemaining(username,callback) {
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		db.connection(callback);
 
-	// 	}],
-	// 	function(connection){
-
-		connection.query('select credit_limit from credit where userid = ?',[username], function(err, docs) {
-			if(!err){
+	connection.query('select credit_limit from credit where userid = ?',[username], function(err, docs) {
+		if(!err){
 			// console.log("docs 1");
 			// console.log(docs);
 		}else{
@@ -470,22 +340,13 @@ function getCreditRemaining(username,callback) {
 		}
 		callback(docs[0]);
 		// return docs;
-	// });
+
 	});
-	}
-	function setCreditRemaining (username,credit_limit) {
+}
+function setCreditRemaining (username,credit_limit) {
 
-
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		db.connection(callback);
-
-	// 	}],
-	// 	function(connection){
-
-		connection.query('update credit set credit_limit=? where userid=?', [credit_limit, username],function(err, docs) {
-			if(!err){
+	connection.query('update credit set credit_limit=? where userid=?', [credit_limit, username],function(err, docs) {
+		if(!err){
 			// console.log("docs 2");
 			// console.log(docs);
 		} else{
@@ -494,21 +355,14 @@ function getCreditRemaining(username,callback) {
 		return docs;
 		// callback(docs[0]);
 	});
-		// });
+
 }
 
 function insertCreditRemaining (username,credit_limit) {
 	
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		db.connection(callback);
 
-	// 	}],
-	// 	function(connection){
-
-		connection.query('insert into credit values(?,?)', [username,credit_limit],function(err, docs) {
-			if(!err){
+	connection.query('insert into credit values(?,?)', [username,credit_limit],function(err, docs) {
+		if(!err){
 			// console.log("docs 2");
 			// console.log(docs);
 		} else{
@@ -518,58 +372,43 @@ function insertCreditRemaining (username,credit_limit) {
 		return docs;
 		// callback(docs[0]);
 	});
-		// });
 }
 exports.getLatestPrice = function(stock,callback) {
 
 	var query = "select amt from matched where stock = ? and datetime = (select max(datetime) from matched where stock = ?)";
-	// async.series([
-		// function(cb){
-		// 	var db = require('./db');
-		// 	var connection = db.connection(cb);
-		// }],function(connection){
-			connection.query(query,[stock,stock], function(err, docs) {
-				if(isEmptyObject(docs)){
-					callback('-1');
-				}else{
-					callback(docs[0].amt);
-				}
-			});
-		// });
+	connection.query(query,[stock,stock], function(err, docs) {
+		if(isEmptyObject(docs)){
+			callback('-1');
+		}else{
+			callback(docs[0].amt);
+		}
+	});
+
 };
 
 exports.getHighestBidPrice = function(stock,callback) {
 	var query = "SELECT price from bid where stock = ? order by price desc limit 1;" ;
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		var connection = db.connection(callback);
-		// }],function(connection){
-			connection.query(query,[stock], function(err, docs) {
-				if(isEmptyObject(docs)){
-					callback('-1');
-				}else{
-					callback(docs[0].price);
-				}
-			});
-		// });
+
+	connection.query(query,[stock], function(err, docs) {
+		if(isEmptyObject(docs)){
+			callback('-1');
+		}else{
+			callback(docs[0].price);
+		}
+	});
+
 };
 
 exports.getLowestAskPrice = function(stock,callback) {
 	var query = "SELECT price from ask where stock = ? order by price asc limit 1;" ;
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		var connection = db.connection(callback);
-	// 	}],function(connection){
-		connection.query(query,[stock], function(err, docs) {
-			if(isEmptyObject(docs)){
-				callback('-1');
-			}else{
-				callback(docs[0].price);
-			}
-		});
-		// });
+	connection.query(query,[stock], function(err, docs) {
+		if(isEmptyObject(docs)){
+			callback('-1');
+		}else{
+			callback(docs[0].price);
+		}
+	});
+
 };
 exports.getLowestAsk = function(stock) {
 	var lowestAsk = {
@@ -595,117 +434,68 @@ exports.getLowestAsk = function(stock) {
 
 exports.getUnfulfilledBidsAll = function(callback){
 	var query = "Select * from bid where status = 'unfulfilled'";
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		db.connection(callback);
+	connection.query(query, function(err, docs) {
+		if(!err){
+			callback(docs);
+		}
+	});
 
-	// 	}],
-	// 	function(connection){
-		connection.query(query, function(err, docs) {
-			if(!err){
-				callback(docs);
-			}
-		});
-		// });
 };
 
 
 exports.getUnfulfilledAsksAll = function(callback){
 	var query = "Select * from ask where status = 'unfulfilled'";
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		db.connection(callback);
 
-	// 	}],
-	// 	function(connection){
-		connection.query(query, function(err, docs) {
-			if(!err){
-				callback(docs);
-			}
-		// 	});
+	connection.query(query, function(err, docs) {
+		if(!err){
+			callback(docs);
+		}
+
 	});
-	};
+};
 
-	exports.getUnfulfilledBids = function(stock,callback){
-		callback(getUnfulfilledBids(stock,callback));
-	};
+exports.getUnfulfilledBids = function(stock,callback){
+	callback(getUnfulfilledBids(stock,callback));
+};
 // exports.getUnfulfilledBids= function(stock,callback) {
 	function getUnfulfilledBids(stock,callback) {
 		var bidList = [];
 		var query = "Select * from bid where stock = ? and status = 'unfulfilled'";
-		// async.series([
-		// 	function(callback){
-		// 		var db = require('./db');
-		// 		db.connection(callback);
 
-		// 	}],
-		// 	function(connection){
 
-			connection.query(query,[stock], function(err, docs) {
-				if(!err){
+		connection.query(query,[stock], function(err, docs) {
+			if(!err){
 			// console.log("docs 1");
 			// console.log(docs);
 			callback(docs);
 		}else{
 			console.log("error 1 "+err);
 		}
-		// if(isEmptyObject(docs)){
-		// 	insertCreditRemaining(username,creditLimit);
-		// 	var obj = [];
-		// 	obj.credit_limit = creditLimit;
-		// 	docs.push(obj);
-		// 	// console.log(docs);
-		// }
-		// callback(docs[0]);
-		// return docs;
-	// });
-		});
 
+	});
 
-	// for (var i = 0; i < unfulfilledBids.length; i++) {
-	// 	var bid = unfulfilledBids[i];
-	// 	if (bid.stock === stock) {
-	// 		console.log(bid);
-	// 		bidList.push(bid);
-	// 	}
-	// }
-	// return bidList;
-};
-exports.getUnfulfilledAsks = function(stock,callback){
-	callback(getUnfulfilledAsks(stock,callback));
-};
+	};
+	exports.getUnfulfilledAsks = function(stock,callback){
+		callback(getUnfulfilledAsks(stock,callback));
+	};
 // exports.getUnfulfilledAsks = function(stock,callback) {
 	function getUnfulfilledAsks(stock,callback) {
 	// var askList = [];
 	var query = "Select * from ask where stock = ? and status = 'unfulfilled'";
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		var connection = db.connection(callback);
-	// 	}],function(connection){
-	// 		var returnString = '';
+	
 	connection.query(query,[stock], function(err, docs) {
 		callback(docs);
 	});
-		// });
-	// return askList;
+
 };
 
 exports.getAllCreditRemainingForDisplay = function (callback){
-	// get the credit limit for all users from database. #SD#
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		var connection = db.connection(callback);
-	// 	}],function(connection){
-			// var returnString = '';
-			connection.query('select * from credit', function(err, docs) {
-				callback(docs);
 
-			});
-		// });
+	connection.query('select * from credit', function(err, docs) {
+		callback(docs);
+
+	});
+
 };
 
 exports.endTradingDay = function(){
@@ -718,25 +508,17 @@ exports.endTradingDay = function(){
     unfulfilledAsks.length = 0;
     unfulfilledBids.length = 0;
 
-    // reset all credit limits of users
-    // async.series([
-    // 	function(callback){
-    // 		var db = require('./db');
-    // 		db.connection(callback);
-
-    // 	}],
-    // 	function(connection){
-    	connection.query('Truncate table credit;', function(err, docs) {
+    connection.query('Truncate table credit;', function(err, docs) {
+    	if(!err){
+    		console.log('Credit Cleared!');
+    	}
+    	connection.query('Truncate table bid;', function(err, docs) {
     		if(!err){
-    			console.log('Credit Cleared!');
-    		}
-    		connection.query('Truncate table bid;', function(err, docs) {
-    			if(!err){
-    				console.log('Bid Cleared!');
-    				connection.query('Truncate table ask;', function(err, docs) {
-    					if(!err){
-    						console.log('Ask Cleared!');
-    					}
+    			console.log('Bid Cleared!');
+    			connection.query('Truncate table ask;', function(err, docs) {
+    				if(!err){
+    					console.log('Ask Cleared!');
+    				}
     						// Send to BackOffice
     						bo.sendToBackOffice(function(status){
     							if(status){
@@ -747,80 +529,49 @@ exports.endTradingDay = function(){
     						});
     						
     					});
-    			}
+    		}
 
-    		});
     	});
-    	// });
-
+    });
 };
 
 function addBid(bid, callback){
 	var query = "Insert into bid (bidder,stock,price,time,status) value (?,?,?,?,?);";
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		var connection = db.connection(callback);
-	// 	}],function(connection){
 
-		connection.query(query,[bid.username, bid.stock, bid.price, bid.date, bid.status], function(err, docs) {
-			callback(docs);
-		});
-		// });
+	connection.query(query,[bid.username, bid.stock, bid.price, bid.date, bid.status], function(err, docs) {
+		callback(docs);
+	});
 }
 
 function addAsk(ask, callback){
 	var query = "Insert into ask (seller,stock,price,time,status) value (?,?,?,?,?);";
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		var connection = db.connection(callback);
-	// 	}],function(connection){
-		connection.query(query,[ask.username, ask.stock, ask.price, ask.date, ask.status], function(err, docs) {
-			callback(docs);
-		});
-		// });
+
+	connection.query(query,[ask.username, ask.stock, ask.price, ask.date, ask.status], function(err, docs) {
+		callback(docs);
+	});
 }
 
 function addMatch(match, callback){
 	var query = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?);";
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		var connection = db.connection(callback);
-		// }],function(connection){
-			connection.query(query,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
-				callback(docs);
-			});
-		// });
+	connection.query(query,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
+		callback(docs);
+	});
+
 }
 function updateBidMatch(bid, callback){
 	var query = "Update exchange.bid set status='matched' where id = ?;";
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		var connection = db.connection(callback);
-	// 	}],function(connection){
-		connection.query(query,[bid.id], function(err, docs) {
-			callback(docs);
-		});
-		// });
+	connection.query(query,[bid.id], function(err, docs) {
+		callback(docs);
+	});
 }
 function updateAskMatch(ask, callback){
 	var query = "Update exchange.ask set status='matched' where id = ?; ";
-	// async.series([
-	// 	function(callback){
-	// 		var db = require('./db');
-	// 		var connection = db.connection(callback);
-	// 	}],function(connection){
-		connection.query(query,[ask.id], function(err, docs) {
-			callback(docs);
-		});
-		// });
+	connection.query(query,[ask.id], function(err, docs) {
+		callback(docs);
+	});
 }
 
 function isEmptyObject(obj) {
 	return !Object.keys(obj).length;
 }
-
 });

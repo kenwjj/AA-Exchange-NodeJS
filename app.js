@@ -1,4 +1,3 @@
-
 var cluster = require('cluster');
 var http = require('http');
 var path = require('path');
@@ -6,13 +5,15 @@ var favicon = require('static-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
 var routes = require('./routes/routes');
 var auth = require('./routes/auth');
 var config = require('./config/config');
 var bo = require('./routes/backoffice');
+var express = require('express');
+var  MySQLStore = require('connect-mysql')(express);
+
 // Code to run if we're in the master process
-if (cluster.isMaster) {
+if (cluster.isMaster && config.clustering) {
     // Count the machine's CPUs
     var cpuCount = require('os').cpus().length;
     // cpuCount = 1;
@@ -33,32 +34,7 @@ if (cluster.isMaster) {
         });
 // Code to run if we're in a worker process
 } else {
-    // Required
-    var express = require('express');
-    var  MySQLStore = require('connect-mysql')(express);
-    // remember to ensure the library uses ndb for the engine
-    var options = {};
-    if(config.mode ==='local'){
-        options = {
-            pool: true,
-            config: {
-                user: 'user',
-                password: 'user',
-                database: 'exchange'
-            }
-        };
-    }else{
-        options = {
-            pool: true,
-            config: {
-                user: 'user',
-                password: 'user',
-                database: 'exchange'
-            }
-        };
-    }
 
-    
     var app = express();
 
     // view engine setup
@@ -70,9 +46,8 @@ if (cluster.isMaster) {
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded());
     app.use(cookieParser());
-    app.use(express.session({secret: config.secret,store: new MySQLStore(options)}));
+    app.use(express.session({secret: config.secret,store: new MySQLStore(config.sessionOptions)}));
     app.use(routes.appendLocalsToUseInViews);
-
     app.use(express.static(path.join(__dirname, 'public')));
     app.use(app.router);
 
@@ -126,9 +101,10 @@ if (cluster.isMaster) {
 
     var server = app.listen(app.get('port'), function() {
       console.log('Express server listening on port ' + server.address().port);
-      console.log('Worker ' + cluster.worker.id + ' running!');
+      if(cluster.worker!== null){
+          console.log('Worker ' + cluster.worker.id + ' running!');
+      }
   });
     
-
 }
 module.exports = app;
