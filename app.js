@@ -64,6 +64,7 @@ if (cluster.isMaster && config.clustering) {
     app.post('/processbuy',auth,routes.processbuy);
     app.post('/processsell',auth,routes.processsell);
     app.get('/matchlog',routes.matchlog);
+    app.get('/clearbo',require('./routes/backoffice').clearBackoffice);
 
     /// catch 404 and forwarding to error handler
     app.use(function(req, res, next) {

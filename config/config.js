@@ -1,7 +1,7 @@
 var config = {};
 
-config.mode = 'actual';
-config.clustering = true;
+config.mode = 'local'; // local or actual
+config.clustering = true; // true or false
 config.database = 'exchange';
 
 if(config.mode ==='local'){
@@ -16,13 +16,13 @@ if(config.mode ==='local'){
 	config.slavepass = 'user';
 
 	config.sessionOptions = {
-        pool: true,
-        config: {
-            user: 'user',
-            password: 'user',
-            database: 'exchange'
-        }
-    };
+		pool: true,
+		config: {
+			user: 'user',
+			password: 'user',
+			database: 'exchange'
+		}
+	};
 }else{
 	config.masterdbhost = 'localhost';
 	config.masterdbport = 7000;
@@ -35,14 +35,14 @@ if(config.mode ==='local'){
 	config.slavepass = '';
 
 	config.sessionOptions = {
-        pool: true,
-        config: {
-            user: 'root',
-            password: '',
-            database: 'exchange',
-            port: 7000
-        }
-    };
+		pool: true,
+		config: {
+			user: 'root',
+			password: '',
+			database: 'exchange',
+			port: 7000
+		}
+	};
 }
 
 config.secret = '1234567890QWERTY';
@@ -55,5 +55,9 @@ config.soapURLSecondary = 'http://10.4.12.30:81/aabo/Service.asmx?wsdl';
 config.matchedLocation = './logs/matched.log';
 config.rejectedLocation = './logs/rejected.log';
 
-config.hosts = ['localhost','192.168.0.5'];
+if(config.mode ==='local'){
+	config.hosts = ['localhost'];
+}else{
+	config.hosts = ['192.168.0.5'];
+}
 module.exports = config;

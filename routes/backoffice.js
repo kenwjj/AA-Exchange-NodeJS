@@ -17,12 +17,11 @@ exports.sendToBackOffice = function(callback){
 			return false;
 		}
 	}
-
+	var status = true;
 	require('readline').createInterface({
 		input: fs.createReadStream(filename),
 		terminal: false
 	}).on('line', function(line){
-		console.log('Line: ' + line);
 		var args = {teamId: config.username,teamPassword:config.password, transactionDescription:line};
 
 	// soap.createClient('http://www.webservicex.net/country.asmx?WSDL', function(err, client) {
@@ -30,14 +29,14 @@ exports.sendToBackOffice = function(callback){
 			if(err){
 				console.log('Client connect error');
 				console.log(err);
-				callback(false);
 			}else{
 				client.ProcessTransaction (args,function(err, result) {
 					if(err){
 						console.log(err);
-					callback(false);
+						status = false;
+						console.log('Failed: ['+ args.transactionDescription+']');
 					}else{
-						console.log(result);
+						console.log('Success: ['+ args.transactionDescription+']');
 					}
 
 				});
@@ -45,8 +44,41 @@ exports.sendToBackOffice = function(callback){
 			
 		});
 
+	}).on('close', function(){
+		callback(status);
 	});
-	callback(true);
+};
+
+exports.clearBackoffice = function(res,resp){
+	var url = soapURLPrimary;
+	if(!checkConnection(soapURLPrimary)){
+		console.log('Primary BackOffice is down');
+		if(checkConnection(soapURLSecondary)){
+			url = soapURLSecondary;
+		}else{
+			console.log('Both BackOffices are down');
+			return false;
+		}
+	}
+	var args = {teamId: config.username,teamPassword:config.password};
+	soap.createClient(url, function(err, client) {
+		if(err){
+			console.log('Client connect error');
+			console.log(err);
+		}else{
+			client.Clear (args,function(err, result) {
+				if(err){
+					console.log(err);
+					console.log('Clear BackOffice Log Failed');
+				}else{
+					console.log('Clear BackOffice Log Success');
+					resp.end('Success');
+				}
+
+			});
+		}
+	});
+
 };
 
 function checkConnection(url){
