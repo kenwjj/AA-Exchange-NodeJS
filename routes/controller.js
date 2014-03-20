@@ -6,7 +6,7 @@ var bo = require('./backoffice');
 var db = require('./db');
 db.connection(function(connection){
 
-	var creditLimit = 1000000;
+	var creditLimit = 1000000000;
 	var unfulfilledBids = [];
 	var unfulfilledAsks = [];
 	var matchedTransactions = [];
@@ -31,9 +31,9 @@ db.connection(function(connection){
 						callback(status);
 					});
 				}else{
-				
-				bid.status = true;
-				bid.status = 'unfulfilled';
+
+					bid.status = true;
+					bid.status = 'unfulfilled';
 				// unfulfilledBids.push(bid)
 				// step 1: insert new bid into unfulfilledBids;
 				addBid(bid, function(code){
@@ -136,29 +136,29 @@ db.connection(function(connection){
 													});
 
 												});
-											}else{
-												connection.commit(function(err) {
-													if (err){ 
-														connection.rollback(function() {
-															console.log('rollback!');
-															throw err;
-														});
-													}
+}else{
+	connection.commit(function(err) {
+		if (err){ 
+			connection.rollback(function() {
+				console.log('rollback!');
+				throw err;
+			});
+		}
 													// console.log('Commit to DB success!');
 													callback(true);
 												});
-												callback(true);
-											}
-										}		
-									});
-								}
-							});
-						});						
-					});
-				});
-			}
-		});
-	};
+	callback(true);
+}
+}		
+});
+}
+});
+});						
+});
+});
+}
+});
+};
 
 
 exports.placeNewAskAndAttemptMatch = function(ask,callback) {
@@ -271,7 +271,7 @@ exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 							}
 							
 						});
-					}
+}
 
 });
 });	
@@ -279,45 +279,40 @@ exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 });
 };
 
-// function updateLatestPrice(match) {
-// 	var stock = match.stock,
-// 	price = match.price;
-// 	// update the correct attribute
-// 	if (stock === "smu") {
-// 		latestSmuPrice = price;
-// 	} else if (stock === "nus") {
-// 		latestNusPrice = price;
-// 	} else if (stock === "ntu") {
-// 		latestNtuPrice = price;
-// 	}
-
-// }
-
-
-// check if a buyer is eligible to place an order based on his credit limit
-// if he is eligible, this method adjusts his credit limit and returns true
-// if he is not eligible, this method logs the bid and returns false
 function validateCreditLimit(bid, callback) {
 	
-	async.series([
-		function(callback){
-			getCreditRemaining(bid.username,callback);
-		}],
-		function(remains){
-			var status;
-			var left = remains.credit_limit;
-			var cost= bid.price * 1000;
-			var newAmt = left - cost;
-			if (newAmt < 0) {
-				//log rejected order
-				callback(false);
-			} else {
-				setCreditRemaining(bid.username, newAmt,function(){
+	var cost= bid.price * 1000;
+	var username = bid.username;
+
+	getCreditRemaining(bid.username,function(remains,err){
+
+		var newAmt = remains.credit_limit - cost;
+
+		if (newAmt < 0) {
+			callback(false);
+		}
+		
+		var query = 'select credit_limit from credit where userid = ? for update;';
+		connection.query(query,bid.username, function(err, docs) {
+
+			var query2 = 'update credit set credit_limit=? where userid=?';
+			connection.query(query2, [newAmt, bid.username],function(err, docs) {
+				if(err){
+					console.log('setCreditRemaining',err);
+				}
+				connection.query('commit;',function(err,docs){
+					if(err){
+						console.log('commit',err);
+					}
 					callback(true);
 				});
-				
-			}
+
+			});
+			
 		});
+	});
+
+	
 }
 // retrieve unfulfiled current (highest) bid for a particular stock
 // returns null if there is no unfulfiled bid for this stock
@@ -418,6 +413,7 @@ function getCreditRemaining(username,callback) {
 			console.log('getCreditRemaining',err);
 		}
 		if(isEmptyObject(docs)){
+			
 			insertCreditRemaining(username,creditLimit, function(result){
 				var obj = [];
 				obj.credit_limit = creditLimit;
@@ -428,7 +424,7 @@ function getCreditRemaining(username,callback) {
 		}else{
 			callback(docs[0]);
 		}
-	
+
 	});
 }
 
@@ -591,7 +587,7 @@ exports.endTradingDay = function(){
     				if(!err){
     					console.log('Ask Cleared!');
     				}
-    					if(config.sendtobackoffice){
+    				if(config.sendtobackoffice){
     						// Send to BackOffice
     						bo.sendToBackOffice(function(status){
     							if(status){
@@ -604,9 +600,9 @@ exports.endTradingDay = function(){
 
     					}else{
     						fs.unlink(config.matchedLocation, function (err) {
-							  if (err) throw err;
-							  console.log('successfully deleted matched.log');
-							});
+    							if (err) throw err;
+    							console.log('successfully deleted matched.log');
+    						});
     					}
     				});
     		}
