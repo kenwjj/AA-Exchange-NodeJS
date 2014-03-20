@@ -16,7 +16,7 @@ db.connection(function(connection){
 
 
 	exports.placeNewBidAndAttemptMatch = function(bid,callback){
-	// var okToContinue;
+	// var okToContinue;validateCreditLimit
 	//check limit set to db
 
 			// step 0: check if this bid is valid based on the buyer's credit limit
@@ -27,11 +27,10 @@ db.connection(function(connection){
 				status = false;
 				bid.status = 'rejected';
 				addBid(bid, function(){
-					
 					logRejectedBuyOrder(bid);
 					callback(status);
 				});
-			}else{
+				}else{
 				
 				bid.status = true;
 				bid.status = 'unfulfilled';
@@ -56,13 +55,15 @@ db.connection(function(connection){
 						// same stock
 
 						connection.beginTransaction(function(err) {
-  							if (err) { throw err; }
-  							var query1 = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1 for update;" ;
-  							connection.query(query1,[bid.stock], function(err, highestBid) {
+							if (err) { throw err; }
+							var query1 = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1 for update;" ;
+							connection.query(query1,[bid.stock], function(err, highestBid) {
+								if (err) { console.log('query1',err); }
 								// step 4: identify the current/lowest ask in unfulfilledAsks of the
 								// same stock
 								var query2 = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by price asc, time asc limit 1 for update;";
 								connection.query(query2,[bid.stock], function(err, lowestAsk) {
+									if (err) { console.log('query2',err); }
 									// step 5: check if there is a match.
 									// A match happens if the lowest ask is <= highest bid
 									if (highestBid[0].price >= lowestAsk[0].price) {
@@ -78,10 +79,13 @@ db.connection(function(connection){
 										};
 										var query3 = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?);";
 										connection.query(query3,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
+											if (err) { console.log('query3',err); }
 											var query4 = "Update exchange.bid set status='matched' where id = ?;";
 											connection.query(query4,[highestBid[0].id], function(err, docs) {
+												if (err) { console.log('query4',err); }
 												var query5 = "Update exchange.ask set status='matched' where id = ?; ";
 												connection.query(query5,[lowestAsk[0].id], function(err, docs) {
+													if (err) { console.log('query5',err); }
 													logMatchedTransactions(match);
 													connection.commit(function(err) {
 														if (err){ 
@@ -100,24 +104,15 @@ db.connection(function(connection){
 
 										});
 									}
-									// connection.commit(function(err) {
-									// 	if (err){ 
-									// 		connection.rollback(function() {
-									// 			console.log('rollback!');
-									// 			throw err;
-									// 		});
-									// 	}
-									// 	console.log('Commit to DB success!');
-									// 	callback(true);
-									// });
-								});
-							});
-						});						
-					});
-				});
-			}
-		});
-	};
+									callback(true);
+});
+});
+});						
+});
+});
+}
+});
+};
 
 
 exports.placeNewAskAndAttemptMatch = function(ask,callback) {
@@ -138,7 +133,7 @@ exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 				console.log('something went wrong');
 			}
 			connection.beginTransaction(function(err) {
-	 			if (err) { throw err; }
+				if (err) { throw err; }
 				// step 3: identify the current/highest bid in unfulfilledBids of the same stock
 				var query1 = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1 for update;" ;
 				connection.query(query1,[ask.stock], function(err, highestBid) {
@@ -186,20 +181,10 @@ exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 						callback(true);
 					});
 
-				});
-				// connection.commit(function(err) {
-				// 	if (err){ 
-				// 		connection.rollback(function() {
-				// 			console.log('rollback!');
-				// 			throw err;
-				// 		});
-				// 	}
-				// 	console.log('Commit to DB success!');
-				// 	callback(true);
-				// });
-			});	
-		});
-	});
+});
+});	
+});
+});
 };
 
 // function updateLatestPrice(match) {
@@ -233,12 +218,11 @@ function validateCreditLimit(bid, callback) {
 			var newAmt = left - cost;
 			if (newAmt < 0) {
 				//log rejected order
-				status =  false;
+				callback(false);
 			} else {
 				setCreditRemaining(bid.username, newAmt);
-				status =  true;
+				callback(true);
 			}
-			callback(status);
 		});
 }
 // retrieve unfulfiled current (highest) bid for a particular stock
@@ -340,14 +324,17 @@ function getCreditRemaining(username,callback) {
 			console.log(err);
 		}
 		if(isEmptyObject(docs)){
-			insertCreditRemaining(username,creditLimit);
-			var obj = [];
-			obj.credit_limit = creditLimit;
-			docs.push(obj);
+			insertCreditRemaining(username,creditLimit, function(result){
+				var obj = [];
+				obj.credit_limit = creditLimit;
+				docs.push(obj);
+				callback(docs[0]);
+			});	
 			// console.log(docs);
+		}else{
+			callback(docs[0]);
 		}
-		callback(docs[0]);
-
+	
 	});
 }
 
@@ -356,21 +343,22 @@ function setCreditRemaining (username,credit_limit) {
 
 	connection.query('update credit set credit_limit=? where userid=?', [credit_limit, username],function(err, docs) {
 		if(err){
-			consolelog(+err);
+			console.log(err);
 		} 
 		return docs;
 	});
 
 }
 
-function insertCreditRemaining (username,credit_limit) {
-
-	connection.query('insert into credit values(?,?)', [username,credit_limit],function(err, docs) {
+function insertCreditRemaining (username,credit_limit,callback) {
+	connection.query('insert into credit values(?,?,?);', [username,credit_limit,''],function(err, docs) {
 		if(err){
 			console.log(err);
+		}else{
+			console.log("insertCreditRemaining: "+docs);
+			callback(docs);
 		}
-		console.log("insertCreditRemaining: "+docs);
-		return docs;
+
 	});
 }
 exports.getLatestPrice = function(stock,callback) {

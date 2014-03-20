@@ -1,7 +1,7 @@
 var config = {};
 
-config.mode = 'local'; // local or actual
-config.clustering = true; // true or false
+config.mode = 'actual'; // local or actual
+config.clustering = false; // true or false
 config.database = 'exchange';
 
 if(config.mode ==='local'){
