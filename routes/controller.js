@@ -59,12 +59,12 @@ db.connection(function(connection){
 								console.log('placeNewBidAndAttemptMatch',err);
 								throw err; 
 							}
-							var query1 = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1;" ;
+							var query1 = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1;";
 							connection.query(query1,[bid.stock], function(err, highestBid) {
 								// console.log('highestBid-B',highestBid);
 								if(highestBid === undefined){
 									connection.commit(function(err) {
-										if (err){ 
+										if (err){
 											connection.rollback(function() {
 												console.log('rollback!');
 												throw err;
@@ -185,7 +185,7 @@ exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 					throw err; 
 				}
 				// step 3: identify the current/highest bid in unfulfilledBids of the same stock
-				var query1 = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1 for update;" ;
+				var query1 = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1;" ;
 				connection.query(query1,[ask.stock], function(err, highestBid) {
 					// console.log('highestBid-A',highestBid);
 					if(highestBid === undefined){
@@ -201,7 +201,7 @@ exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 						});
 					}else{
 						// step 4: identify the current/lowest ask in unfulfilledAsks of the same stock
-						var query2 = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by price asc, time asc limit 1 for update;";
+						var query2 = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by price asc, time asc limit 1;";
 						connection.query(query2,[ask.stock], function(err, lowestAsk) {
 							// console.log('lowestAsk-A',lowestAsk);
 							if(lowestAsk === undefined){

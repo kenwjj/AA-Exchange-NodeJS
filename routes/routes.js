@@ -110,106 +110,47 @@ exports.processsell = function(req, res){
 });
 });
 
-		// smu.getLatestPrice = controller.getLatestPrice('smu');
-		// smu.getHighestBidPrice = controller.getHighestBidPrice('smu');
-		// smu.getLowestAskPrice = controller.getLowestAskPrice('smu');
-		// var nus = [];
-		// nus.getLatestPrice = controller.getLatestPrice('nus');
-		// nus.getHighestBidPrice = controller.getHighestBidPrice('nus');
-		// nus.getLowestAskPrice = controller.getLowestAskPrice('nus');
-		// var ntu = [];
-		// ntu.getLatestPrice = controller.getLatestPrice('ntu');
-		// ntu.getHighestBidPrice = controller.getHighestBidPrice('ntu');
-		// ntu.getLowestAskPrice = controller.getLowestAskPrice('ntu');
-		// console.log({smu:smu,nus:nus,ntu:ntu});
-		// console.log(smu.getLatestPrice);
-		
-	};
-	exports.view = function(req, res){
-		async.series([
-			function(callback){
-				controller.getAllCreditRemainingForDisplay(callback);
-			}],function(getAllCreditRemainingForDisplay){
-				
-				var smuBids = {};
-				smuBids.getUnfulfilledBids = [];
-				var smuAsks = {};
-				smuAsks.getUnfulfilledAsks = [];
-				var nusBids = {};
-				nusBids.getUnfulfilledBids = [];
-				var nusAsks = {};
-				nusAsks.getUnfulfilledAsks = [];
-				var ntuBids = {};
-				ntuBids.getUnfulfilledBids = [];
-				var ntuAsks = {};
-				ntuAsks.getUnfulfilledAsks = [];
+};
+exports.view = function(req, res){
+	controller.getAllCreditRemainingForDisplay(function(getAllCreditRemainingForDisplay){
 
-				controller.getUnfulfilledBidsAll(function(docs1){
-					for(var i = 0; i < docs1.length;i++){
-						if(docs1[i].stock ==='smu'){
-							smuBids.getUnfulfilledBids.push(docs1[i]);
-						}else if(docs1[i].stock ==='nus'){
-							nusBids.getUnfulfilledBids.push(docs1[i]);
-						}else if(docs1[i].stock ==='ntu'){
-							ntuBids.getUnfulfilledBids.push(docs1[i]);
-						}
+		var smuBids = {};
+		smuBids.getUnfulfilledBids = [];
+		var smuAsks = {};
+		smuAsks.getUnfulfilledAsks = [];
+		var nusBids = {};
+		nusBids.getUnfulfilledBids = [];
+		var nusAsks = {};
+		nusAsks.getUnfulfilledAsks = [];
+		var ntuBids = {};
+		ntuBids.getUnfulfilledBids = [];
+		var ntuAsks = {};
+		ntuAsks.getUnfulfilledAsks = [];
+
+		controller.getUnfulfilledBidsAll(function(docs1){
+			for(var i = 0; i < docs1.length;i++){
+				if(docs1[i].stock ==='smu'){
+					smuBids.getUnfulfilledBids.push(docs1[i]);
+				}else if(docs1[i].stock ==='nus'){
+					nusBids.getUnfulfilledBids.push(docs1[i]);
+				}else if(docs1[i].stock ==='ntu'){
+					ntuBids.getUnfulfilledBids.push(docs1[i]);
+				}
+			}
+			controller.getUnfulfilledAsksAll(function(docs2){
+				for(var i = 0; i < docs2.length;i++){
+					if(docs2[i].stock ==='smu'){
+						smuAsks.getUnfulfilledAsks.push(docs2[i]);
+					}else if(docs2[i].stock ==='nus'){
+						nusAsks.getUnfulfilledAsks.push(docs2[i]);
+					}else if(docs2[i].stock ==='ntu'){
+						ntuAsks.getUnfulfilledAsks.push(docs2[i]);
 					}
-					controller.getUnfulfilledAsksAll(function(docs2){
-						
-						for(var i = 0; i < docs2.length;i++){
-							if(docs2[i].stock ==='smu'){
-								smuAsks.getUnfulfilledAsks.push(docs2[i]);
-							}else if(docs2[i].stock ==='nus'){
-								nusAsks.getUnfulfilledAsks.push(docs2[i]);
-							}else if(docs2[i].stock ==='ntu'){
-								ntuAsks.getUnfulfilledAsks.push(docs2[i]);
-							}
-
-						}
-						res.render('viewOrders',{smuBids:smuBids,smuAsks:smuAsks,nusBids:nusBids,nusAsks:nusAsks,ntuBids:ntuBids,ntuAsks:ntuAsks,getAllCreditRemainingForDisplay:getAllCreditRemainingForDisplay});
-					});
-				});
-
-				// controller.getUnfulfilledBids('smu',function(smuGetUnfulfilledBids){
-					// console.log(smuGetUnfulfilledBids);
-					// smu.getUnfulfilledBids = smuGetUnfulfilledBids;
-					// controller.getUnfulfilledAsks('smu',function(smuGetUnfulfilledAsks){
-						// smu.getUnfulfilledAsks =  smuGetUnfulfilledAsks;
-					// 	controller.getUnfulfilledBids('nus',function(nusGetUnfulfilledBids){
-					// 		nus.getUnfulfilledBids = nusGetUnfulfilledBids;
-					// 		controller.getUnfulfilledAsks('nus',function(nusGetUnfulfilledAsks){
-					// 			nus.getUnfulfilledAsks = nusGetUnfulfilledAsks;
-					// 			controller.getUnfulfilledBids('ntu',function(ntuGetUnfulfilledBids){
-					// 				ntu.getUnfulfilledBids = ntuGetUnfulfilledBids;
-					// 				controller.getUnfulfilledAsks('ntu',function(ntuGetUnfulfilledAsks){
-					// 					ntu.getUnfulfilledAsks = ntuGetUnfulfilledAsks;
-										// console.log(smu.getUnfulfilledBids);
-
-										// for (var i in smu.getUnfulfilledBids) {
-										// 	console.log(smu.getUnfulfilledBids[i]);
-										// }
-										// console.log(nus);
-										// console.log(ntu);
-										// console.log(smu);
-										// res.render('viewOrders',{smu:smu});
-										// res.render('viewOrders',{smu:smu,nus:nus,ntu:ntu,getAllCreditRemainingForDisplay:getAllCreditRemainingForDisplay});
-					// 				});
-					// 			});
-					// 		});
-						// });
-					// });
-				// });
-
-				// smu.getUnfulfilledBids = controller.getUnfulfilledBids('smu');
-				// smu.getUnfulfilledAsks = controller.getUnfulfilledAsks('smu');
-
-				// nus.getUnfulfilledBids = controller.getUnfulfilledBids('nus');
-				// nus.getUnfulfilledAsks = controller.getUnfulfilledAsks('nus');
-
-				// ntu.getUnfulfilledBids = controller.getUnfulfilledBids('ntu');
-				// ntu.getUnfulfilledAsks = controller.getUnfulfilledAsks('ntu');
-				
-			});		
+				}
+				res.render('viewOrders',{smuBids:smuBids,smuAsks:smuAsks,nusBids:nusBids,nusAsks:nusAsks,ntuBids:ntuBids,ntuAsks:ntuAsks,getAllCreditRemainingForDisplay:getAllCreditRemainingForDisplay});
+			});
+		});
+	});		
 };
 
 exports.end = function(req, res){

@@ -30,6 +30,6 @@ exports.connection = function(callback){
 	poolCluster.add('SLAVE', slaveConfig);
 	// callback(poolCluster);
 	poolCluster.getConnection('MASTER', 'ORDER', function (err, connection) {
-		callback(connection);
+	callback(connection);
 	});
 };

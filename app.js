@@ -42,7 +42,7 @@ if (cluster.isMaster && config.clustering) {
 
     // app.use(favicon());
     // var logFile = fs.createWriteStream('./logs/out.log', {flags: 'a'});
-    // app.use(logger('dev'));
+    app.use(logger('dev'));
     // app.use(express.logger({stream: logFile}));
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded());
