@@ -40,10 +40,10 @@ if (cluster.isMaster && config.clustering) {
     app.set('views', path.join(__dirname, 'views'));
     app.set('view engine', 'ejs');
 
-    app.use(favicon());
-    var logFile = fs.createWriteStream('./logs/out.log', {flags: 'a'});
+    // app.use(favicon());
+    // var logFile = fs.createWriteStream('./logs/out.log', {flags: 'a'});
     // app.use(logger('dev'));
-    app.use(express.logger({stream: logFile}));
+    // app.use(express.logger({stream: logFile}));
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded());
     app.use(cookieParser());
@@ -70,11 +70,11 @@ if (cluster.isMaster && config.clustering) {
     app.get('/clearbo',require('./routes/backoffice').clearBackoffice);
 
     /// catch 404 and forwarding to error handler
-    app.use(function(req, res, next) {
-        var err = new Error('Not Found');
-        err.status = 404;
-        next(err);
-    });
+    // app.use(function(req, res, next) {
+    //     var err = new Error('Not Found');
+    //     err.status = 404;
+    //     next(err);
+    // });
 
     /// error handlers
 

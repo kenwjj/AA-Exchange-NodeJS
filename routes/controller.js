@@ -59,7 +59,7 @@ db.connection(function(connection){
 								console.log('placeNewBidAndAttemptMatch',err);
 								throw err; 
 							}
-							var query1 = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1 for update;" ;
+							var query1 = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1;" ;
 							connection.query(query1,[bid.stock], function(err, highestBid) {
 								// console.log('highestBid-B',highestBid);
 								if(highestBid === undefined){
@@ -78,7 +78,7 @@ db.connection(function(connection){
 									// if (err) { console.log('query1',err,'highestBid',highestBid); }
 									// step 4: identify the current/lowest ask in unfulfilledAsks of the
 									// same stock
-									var query2 = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by price asc, time asc limit 1 for update;";
+									var query2 = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by price asc, time asc limit 1;";
 									connection.query(query2,[bid.stock], function(err, lowestAsk) {
 										if(lowestAsk === undefined){
 											connection.commit(function(err) {
@@ -93,7 +93,6 @@ db.connection(function(connection){
 											});
 										}else{
 
-											// if (err) { console.log('query2',err,'lowestAsk',lowestAsk); }
 											// step 5: check if there is a match.
 											// A match happens if the lowest ask is <= highest bid
 											// console.log('lowestAsk-B',lowestAsk);
@@ -115,16 +114,11 @@ db.connection(function(connection){
 													var query4 = "Update exchange.bid set status='matched' where id = ?;";
 													connection.query(query4,[highestBid[0].id], function(err, docs) {
 														if (err) { console.log('query4',err); }
-														if(docs.changedRows <1){
-															console.log(1,highestBid[0].id,docs);
-														}
 
 														var query5 = "Update exchange.ask set status='matched' where id = ?; ";
 														connection.query(query5,[lowestAsk[0].id], function(err, docs) {
 															if (err) { console.log('query5',err); }
-															if(docs.changedRows <1){
-																console.log(2,lowestAsk[0].id,docs);
-															}
+
 															logMatchedTransactions(match);
 															connection.commit(function(err) {
 																if (err){ 
@@ -240,14 +234,10 @@ exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 
 										var query4 = "Update exchange.bid set status='matched' where id = ?;";
 										connection.query(query4,[highestBid[0].id], function(err, docs) {
-											if(docs.changedRows <1){
-												console.log(3,highestBid[0].id,docs);
-											}
+
 											var query5 = "Update exchange.ask set status='matched' where id = ?; ";
 											connection.query(query5,[lowestAsk[0].id], function(err, docs) {
-												if(docs.changedRows <1){
-													console.log(4,lowestAsk[0].id,docs);
-												}
+
 												logMatchedTransactions(match);
 												connection.commit(function(err) {
 													if (err){ 
