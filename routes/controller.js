@@ -96,7 +96,7 @@ db.connection(function(connection){
 											// step 5: check if there is a match.
 											// A match happens if the lowest ask is <= highest bid
 											// console.log('lowestAsk-B',lowestAsk);
-											if (lowestAsk !== undefined && highestBid!== undefined && lowestAsk[0].price <= highestBid[0].price) {
+											if (lowestAsk[0] !== undefined && highestBid[0] !== undefined && lowestAsk[0].price <= highestBid[0].price) {
 												// this is a BUYING trade - the transaction happens at the higest
 												// bid's timestamp, and the transaction price happens at the lowest
 												// ask
@@ -219,7 +219,7 @@ exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 								// step 5: check if there is a match.
 								// A match happens if the lowest ask is <= highest bid
 
-								if (lowestAsk !== undefined && highestBid!== undefined && lowestAsk[0].price <= highestBid[0].price) {
+								if (lowestAsk[0] !== undefined && highestBid[0]!== undefined && lowestAsk[0].price <= highestBid[0].price) {
 									// this is a SELLING trade - the transaction happens at the lowest
 									// ask's timestamp, and the transaction price happens at the highest
 									var match = {
@@ -447,7 +447,7 @@ function setCreditRemaining (username,credit_limit,callback) {
 function insertCreditRemaining (username,credit_limit,callback) {
 	connection.query('insert into credit values(?,?,?);', [username,credit_limit,''],function(err, docs) {
 		if(err){
-			console.log(insertCreditRemaining,err);
+			console.log('insertCreditRemaining',err);
 		}else{
 			// console.log("insertCreditRemaining: "+docs);
 			callback(docs);
