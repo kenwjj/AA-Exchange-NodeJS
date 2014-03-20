@@ -103,8 +103,20 @@ db.connection(function(connection){
 											});
 
 										});
+									}else{
+										connection.commit(function(err) {
+											if (err){ 
+												connection.rollback(function() {
+													console.log('rollback!');
+													throw err;
+												});
+											}
+											console.log('Commit to DB success!');
+											callback(true);
+										});
+										callback(true);
 									}
-									callback(true);
+									
 });
 });
 });						
@@ -177,8 +189,20 @@ exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 								});
 
 							});
+						}else{
+							connection.commit(function(err) {
+								if (err){ 
+									connection.rollback(function() {
+										console.log('rollback!');
+										throw err;
+									});
+								}
+								console.log('Commit to DB success!');
+								callback(true);
+							});
+							callback(true);
 						}
-						callback(true);
+						
 					});
 
 });
