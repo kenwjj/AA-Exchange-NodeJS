@@ -23,20 +23,20 @@ db.connection(function(connection){
 			validateCreditLimit(bid, function(okToContinue){
 				var status;
 				if (!okToContinue) {
-				// add rejected bid here
-				status = false;
-				bid.status = 'rejected';
-				addBid(bid, function(){
-					logRejectedBuyOrder(bid);
-					callback(status);
-				});
+					// add rejected bid here
+					status = false;
+					bid.status = 'rejected';
+					addBid(bid, function(){
+						logRejectedBuyOrder(bid);
+						callback(status);
+					});
 				}else{
 				
 				bid.status = true;
 				bid.status = 'unfulfilled';
 				// unfulfilledBids.push(bid)
 				// step 1: insert new bid into unfulfilledBids;
-				addBid(bid, function(){
+				addBid(bid, function(code){
 					// check amt of stocks in the ask list
 
 					// step 2: check if there is any unfulfilled asks (sell orders) for the
@@ -55,82 +55,123 @@ db.connection(function(connection){
 						// same stock
 
 						connection.beginTransaction(function(err) {
-							if (err) { throw err; }
+							if (err) { 
+								console.log('placeNewBidAndAttemptMatch',err);
+								throw err; 
+							}
 							var query1 = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1 for update;" ;
 							connection.query(query1,[bid.stock], function(err, highestBid) {
-								if (err) { console.log('query1',err); }
-								// step 4: identify the current/lowest ask in unfulfilledAsks of the
-								// same stock
-								var query2 = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by price asc, time asc limit 1 for update;";
-								connection.query(query2,[bid.stock], function(err, lowestAsk) {
-									if (err) { console.log('query2',err); }
-									// step 5: check if there is a match.
-									// A match happens if the lowest ask is <= highest bid
-									if (highestBid[0].price >= lowestAsk[0].price) {
-										// this is a BUYING trade - the transaction happens at the higest
-										// bid's timestamp, and the transaction price happens at the lowest
-										// ask
-										var match = {
-											highestBid: highestBid[0],
-											lowestAsk: lowestAsk[0],
-											date: highestBid[0].time,
-											price: highestBid[0].price,
-											stock:highestBid[0].stock
-										};
-										var query3 = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?);";
-										connection.query(query3,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
-											if (err) { console.log('query3',err); }
-											var query4 = "Update exchange.bid set status='matched' where id = ?;";
-											connection.query(query4,[highestBid[0].id], function(err, docs) {
-												if (err) { console.log('query4',err); }
-												var query5 = "Update exchange.ask set status='matched' where id = ?; ";
-												connection.query(query5,[lowestAsk[0].id], function(err, docs) {
-													if (err) { console.log('query5',err); }
-													logMatchedTransactions(match);
-													connection.commit(function(err) {
-														if (err){ 
-															connection.rollback(function() {
-																console.log('rollback!');
-																throw err;
-															});
-														}
-														console.log('Commit to DB success!');
-														callback(true);
-													});
-													// callback(true);
-												});
-
+								// console.log('highestBid-B',highestBid);
+								if(highestBid === undefined){
+									connection.commit(function(err) {
+										if (err){ 
+											connection.rollback(function() {
+												console.log('rollback!');
+												throw err;
 											});
-
-										});
-									}else{
-										connection.commit(function(err) {
-											if (err){ 
-												connection.rollback(function() {
-													console.log('rollback!');
-													throw err;
-												});
-											}
-											console.log('Commit to DB success!');
-											callback(true);
-										});
+										}
+										// console.log('Commit to DB success!');
 										callback(true);
-									}
-									
-});
-});
-});						
-});
-});
-}
-});
-};
+									});
+								}else{
+
+									// if (err) { console.log('query1',err,'highestBid',highestBid); }
+									// step 4: identify the current/lowest ask in unfulfilledAsks of the
+									// same stock
+									var query2 = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by price asc, time asc limit 1 for update;";
+									connection.query(query2,[bid.stock], function(err, lowestAsk) {
+										if(lowestAsk === undefined){
+											connection.commit(function(err) {
+												if (err){ 
+													connection.rollback(function() {
+														console.log('rollback!');
+														throw err;
+													});
+												}
+												// console.log('Commit to DB success!');
+												callback(true);
+											});
+										}else{
+
+											// if (err) { console.log('query2',err,'lowestAsk',lowestAsk); }
+											// step 5: check if there is a match.
+											// A match happens if the lowest ask is <= highest bid
+											// console.log('lowestAsk-B',lowestAsk);
+											if (lowestAsk !== undefined && highestBid!== undefined && lowestAsk[0].price <= highestBid[0].price) {
+												// this is a BUYING trade - the transaction happens at the higest
+												// bid's timestamp, and the transaction price happens at the lowest
+												// ask
+												var match = {
+													highestBid: highestBid[0],
+													lowestAsk: lowestAsk[0],
+													date: highestBid[0].time,
+													price: highestBid[0].price,
+													stock:highestBid[0].stock
+												};
+												var query3 = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?);";
+												connection.query(query3,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
+													if (err) { console.log('query3',err); }
+
+													var query4 = "Update exchange.bid set status='matched' where id = ?;";
+													connection.query(query4,[highestBid[0].id], function(err, docs) {
+														if (err) { console.log('query4',err); }
+														if(docs.changedRows <1){
+															console.log(1,highestBid[0].id,docs);
+														}
+
+														var query5 = "Update exchange.ask set status='matched' where id = ?; ";
+														connection.query(query5,[lowestAsk[0].id], function(err, docs) {
+															if (err) { console.log('query5',err); }
+															if(docs.changedRows <1){
+																console.log(2,lowestAsk[0].id,docs);
+															}
+															logMatchedTransactions(match);
+															connection.commit(function(err) {
+																if (err){ 
+																	connection.rollback(function() {
+																		console.log('rollback!');
+																		throw err;
+																	});
+																}
+																// console.log('Commit to DB success!');
+																callback(true);
+															});
+															// callback(true);
+														});
+
+													});
+
+												});
+											}else{
+												connection.commit(function(err) {
+													if (err){ 
+														connection.rollback(function() {
+															console.log('rollback!');
+															throw err;
+														});
+													}
+													// console.log('Commit to DB success!');
+													callback(true);
+												});
+												callback(true);
+											}
+										}		
+									});
+								}
+							});
+						});						
+					});
+				});
+			}
+		});
+	};
 
 
 exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 
 	ask.status = 'unfulfilled';
-	addAsk(ask,function(result){
+	addAsk(ask,function(code){
+		// console.log(code);
 
 		// step 1: insert new ask into unfulfilledAsks
 		getUnfulfilledBids(ask.stock,function(list){
@@ -145,65 +186,102 @@ exports.placeNewAskAndAttemptMatch = function(ask,callback) {
 				console.log('something went wrong');
 			}
 			connection.beginTransaction(function(err) {
-				if (err) { throw err; }
+				if (err) { 
+					console.log('placeNewAskAndAttemptMatch',err);
+					throw err; 
+				}
 				// step 3: identify the current/highest bid in unfulfilledBids of the same stock
 				var query1 = "SELECT bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1 for update;" ;
 				connection.query(query1,[ask.stock], function(err, highestBid) {
-					// step 4: identify the current/lowest ask in unfulfilledAsks of the same stock
-					var query2 = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by price asc, time asc limit 1 for update;";
-					connection.query(query2,[ask.stock], function(err, lowestAsk) {
-						// step 5: check if there is a match.
-						// A match happens if the lowest ask is <= highest bid
-
-						if (lowestAsk[0].price <= highestBid[0].price) {
-							// this is a SELLING trade - the transaction happens at the lowest
-							// ask's timestamp, and the transaction price happens at the highest
-							var match = {
-								highestBid: highestBid[0],
-								lowestAsk: lowestAsk[0],
-								date: highestBid[0].time,
-								price: highestBid[0].price,
-								stock:highestBid[0].stock
-							};
-							var query3 = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?);";
-							connection.query(query3,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
-
-								var query4 = "Update exchange.bid set status='matched' where id = ?;";
-								connection.query(query4,[highestBid[0].id], function(err, docs) {
-									var query5 = "Update exchange.ask set status='matched' where id = ?; ";
-									connection.query(query5,[lowestAsk[0].id], function(err, docs) {
-										logMatchedTransactions(match);
-										connection.commit(function(err) {
-											if (err){ 
-												connection.rollback(function() {
-													console.log('rollback!');
-													throw err;
-												});
-											}
-											console.log('Commit to DB success!');
-											callback(true);
-										});
-										// callback(true);
-									});
-
+					// console.log('highestBid-A',highestBid);
+					if(highestBid === undefined){
+						connection.commit(function(err) {
+							if (err){ 
+								connection.rollback(function() {
+									console.log('rollback!');
+									throw err;
 								});
-
-							});
-						}else{
-							connection.commit(function(err) {
-								if (err){ 
-									connection.rollback(function() {
-										console.log('rollback!');
-										throw err;
-									});
-								}
-								console.log('Commit to DB success!');
-								callback(true);
-							});
+							}
+							// console.log('Commit to DB success!');
 							callback(true);
-						}
-						
-					});
+						});
+					}else{
+						// step 4: identify the current/lowest ask in unfulfilledAsks of the same stock
+						var query2 = "SELECT seller,stock,price,time,status,id from ask where stock = ? and status = 'unfulfilled' order by price asc, time asc limit 1 for update;";
+						connection.query(query2,[ask.stock], function(err, lowestAsk) {
+							// console.log('lowestAsk-A',lowestAsk);
+							if(lowestAsk === undefined){
+								connection.commit(function(err) {
+									if (err){ 
+										connection.rollback(function() {
+											console.log('rollback!');
+											throw err;
+										});
+									}
+									// console.log('Commit to DB success!');
+									callback(true);
+								});
+							}else{
+								// step 5: check if there is a match.
+								// A match happens if the lowest ask is <= highest bid
+
+								if (lowestAsk !== undefined && highestBid!== undefined && lowestAsk[0].price <= highestBid[0].price) {
+									// this is a SELLING trade - the transaction happens at the lowest
+									// ask's timestamp, and the transaction price happens at the highest
+									var match = {
+										highestBid: highestBid[0],
+										lowestAsk: lowestAsk[0],
+										date: highestBid[0].time,
+										price: highestBid[0].price,
+										stock:highestBid[0].stock
+									};
+									var query3 = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?);";
+									connection.query(query3,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
+
+										var query4 = "Update exchange.bid set status='matched' where id = ?;";
+										connection.query(query4,[highestBid[0].id], function(err, docs) {
+											if(docs.changedRows <1){
+												console.log(3,highestBid[0].id,docs);
+											}
+											var query5 = "Update exchange.ask set status='matched' where id = ?; ";
+											connection.query(query5,[lowestAsk[0].id], function(err, docs) {
+												if(docs.changedRows <1){
+													console.log(4,lowestAsk[0].id,docs);
+												}
+												logMatchedTransactions(match);
+												connection.commit(function(err) {
+													if (err){ 
+														connection.rollback(function() {
+															console.log('rollback!');
+															throw err;
+														});
+													}
+													// console.log('Commit to DB success!');
+													callback(true);
+												});
+												// callback(true);
+											});
+
+										});
+
+									});
+								}else{
+									connection.commit(function(err) {
+										if (err){ 
+											connection.rollback(function() {
+												console.log('rollback!');
+												throw err;
+											});
+										}
+										// console.log('Commit to DB success!');
+										callback(true);
+									});
+									callback(true);
+								}
+							}
+							
+						});
+					}
 
 });
 });	
@@ -244,8 +322,10 @@ function validateCreditLimit(bid, callback) {
 				//log rejected order
 				callback(false);
 			} else {
-				setCreditRemaining(bid.username, newAmt);
-				callback(true);
+				setCreditRemaining(bid.username, newAmt,function(){
+					callback(true);
+				});
+				
 			}
 		});
 }
@@ -278,7 +358,7 @@ function logRejectedBuyOrder(bid) {
 	var bidString = "stock: " + bid.stock + ", price: " + bid.price + ", userId: " + bid.username + ", date: " + bid.date.toString() + "\r\n";
 	fs.appendFile(rejectedLocation, bidString, function(err) {
 		if(err) {
-			console.log(err);
+			console.log('logRejectedBuyOrder',err);
 		} else {
 			
 			console.log("Reject recorded!\n"+bidString);
@@ -299,12 +379,12 @@ function logMatchedTransactions(match,rep) {
 	}
 	fs.appendFile(matchedLocation, matchString, function(err){
 		if(err) {
-			console.log(err);
+			console.log('logMatchedTransactions',err);
 		} else {
 			
-			console.log("Match recorded!\n"+matchString);
+			// console.log("Match recorded!\n"+matchString);
 		}
-		if(rep !== 'rep'){
+		if(rep !== 'rep' && config.syncmatch){
 			sendRequest(config.host,matchString,function(text){
 				// console.log(text);
 			});
@@ -337,15 +417,15 @@ function sendRequest(host,matchString,callback){
 			});
 
 		}).on("error", function(e){
-			console.log("Got error: " + e);
+			console.log("Send Request for matchlog not successful: " + e);
 		});
 	}
 }
 // DB Functions
 function getCreditRemaining(username,callback) {
-	connection.query('select credit_limit from credit where userid = ?',[username], function(err, docs) {
+	connection.query('select credit_limit from credit where userid = ?;',[username], function(err, docs) {
 		if(err){
-			console.log(err);
+			console.log('getCreditRemaining',err);
 		}
 		if(isEmptyObject(docs)){
 			insertCreditRemaining(username,creditLimit, function(result){
@@ -362,14 +442,14 @@ function getCreditRemaining(username,callback) {
 	});
 }
 
-function setCreditRemaining (username,credit_limit) {
+function setCreditRemaining (username,credit_limit,callback) {
 
 
 	connection.query('update credit set credit_limit=? where userid=?', [credit_limit, username],function(err, docs) {
 		if(err){
-			console.log(err);
+			console.log('setCreditRemaining',err);
 		} 
-		return docs;
+		callback(docs);
 	});
 
 }
@@ -377,9 +457,9 @@ function setCreditRemaining (username,credit_limit) {
 function insertCreditRemaining (username,credit_limit,callback) {
 	connection.query('insert into credit values(?,?,?);', [username,credit_limit,''],function(err, docs) {
 		if(err){
-			console.log(err);
+			console.log(insertCreditRemaining,err);
 		}else{
-			console.log("insertCreditRemaining: "+docs);
+			// console.log("insertCreditRemaining: "+docs);
 			callback(docs);
 		}
 
@@ -474,7 +554,7 @@ function getUnfulfilledBids(stock,callback) {
 		if(!err){
 			callback(docs);
 		}else{
-			console.log(err);
+			console.log('getUnfulfilledBids',err);
 		}
 
 	});
@@ -521,6 +601,7 @@ exports.endTradingDay = function(){
     				if(!err){
     					console.log('Ask Cleared!');
     				}
+    					if(config.sendtobackoffice){
     						// Send to BackOffice
     						bo.sendToBackOffice(function(status){
     							if(status){
@@ -530,7 +611,14 @@ exports.endTradingDay = function(){
     							}
     						});
     						
-    					});
+
+    					}else{
+    						fs.unlink(config.matchedLocation, function (err) {
+							  if (err) throw err;
+							  console.log('successfully deleted matched.log');
+							});
+    					}
+    				});
     		}
 
     	});

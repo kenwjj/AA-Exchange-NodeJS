@@ -1,8 +1,10 @@
 var config = {};
 
 config.mode = 'actual'; // local or actual
-config.clustering = false; // true or false
+config.clustering = true; // true or false
 config.database = 'exchange';
+config.syncmatch = false;
+config.sendtobackoffice = false;
 
 if(config.mode ==='local'){
 	config.masterdbhost = 'localhost';
@@ -58,6 +60,6 @@ config.rejectedLocation = './logs/rejected.log';
 if(config.mode ==='local'){
 	config.hosts = ['localhost'];
 }else{
-	config.hosts = ['192.168.0.5'];
+	config.hosts = ['192.168.0.2'];
 }
 module.exports = config;

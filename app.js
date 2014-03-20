@@ -10,6 +10,7 @@ var auth = require('./routes/auth');
 var config = require('./config/config');
 var bo = require('./routes/backoffice');
 var express = require('express');
+var fs = require('fs');
 var  MySQLStore = require('connect-mysql')(express);
 if (cluster.isMaster && config.clustering) {
     // Count the machine's CPUs
@@ -40,7 +41,9 @@ if (cluster.isMaster && config.clustering) {
     app.set('view engine', 'ejs');
 
     app.use(favicon());
-    app.use(logger('dev'));
+    var logFile = fs.createWriteStream('./logs/out.log', {flags: 'a'});
+    // app.use(logger('dev'));
+    app.use(express.logger({stream: logFile}));
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded());
     app.use(cookieParser());
