@@ -64,7 +64,7 @@ public class ExchangeBean {
 		try{
 			timer.scheduleAtFixedRate(backOfficeCheck, 0, 1000);
 			DbBean.prepareStatements();
-			}
+		}
 		catch(Exception e){
 			e.printStackTrace();
 		}
@@ -95,13 +95,17 @@ public class ExchangeBean {
 	// bids are separated by <br> for display on HTML page
 	public synchronized String getUnfulfilledBidsForDisplay(String stock) {
 		String returnString = "";
+		try{
 		unfulfilledBids = DbBean.retrieveUnfulfilledBids(stock);
 		for (int i = 0; i < unfulfilledBids.size(); i++) {
 			Bid bid = unfulfilledBids.get(i);
 			returnString += bid.toString() + "<br />";
-			
+
 		}
-		
+		}
+		catch(SQLException s){
+			return "";
+		}
 		return returnString;
 	}
 
@@ -133,7 +137,7 @@ public class ExchangeBean {
 		return false; // failure due to exception
 	}
 
-	public synchronized String getUnfulfilledAsks(String stock) {
+	public synchronized String getUnfulfilledAsks(String stock) throws SQLException {
 		String returnString = "";
 		unfulfilledAsks = DbBean.retrieveUnfulfilledAsks(stock);
 		for (int i = 0; i < unfulfilledAsks.size(); i++) {
@@ -147,19 +151,19 @@ public class ExchangeBean {
 
 	// returns the highest bid for a particular stock
 	// returns -1 if there is no bid at all
-	public synchronized int getHighestBidPrice(String stock) {
+	public int getHighestBidPrice(String stock) throws SQLException {
 		return DbBean.getHighestBidPrice(stock);
 	}
 
 	// retrieve unfulfiled current (highest) bid for a particular stock
 	// returns null if there is no unfulfiled bid for this stock
-	private synchronized Bid getHighestBid(String stock) {
+	private  Bid getHighestBid(String stock) throws SQLException {
 		return DbBean.getHighestBid(stock);
 	}
 
 	// returns the lowest ask for a particular stock
 	// returns -1 if there is no ask at all
-	public synchronized int getLowestAskPrice(String stock) {
+	public int getLowestAskPrice(String stock){
 		return DbBean.getLowestAskPrice(stock);
 	}
 
@@ -167,20 +171,19 @@ public class ExchangeBean {
 
 	// retrieve unfulfiled current (lowest) ask for a particular stock
 	// returns null if there is no unfulfiled asks for this stock
-	private synchronized Ask getLowestAsk(String stock) {
+	private Ask getLowestAsk(String stock) throws SQLException {
 		return DbBean.getLowestAsk(stock);
 	}
 
 	// get credit remaining for a particular buyer
-	private static synchronized int getCreditRemaining(String buyerUserId)
-	{
+	private static int getCreditRemaining(String buyerUserId) throws SQLException{
 		return DbBean.getCreditRemaining(buyerUserId);
 	}
 
 	// check if a buyer is eligible to place an order based on his credit limit
 	// if he is eligible, this method adjusts his credit limit and returns true
 	// if he is not eligible, this method logs the bid and returns false
-	private static synchronized boolean validateCreditLimit(Bid b) throws ClassNotFoundException,
+	private static boolean validateCreditLimit(Bid b) throws ClassNotFoundException,
 	SQLException, NamingException {
 		// calculate the total price of this bid
 		int totalPriceOfBid = b.getPrice() * 1000; // each bid is for 1000
@@ -200,7 +203,7 @@ public class ExchangeBean {
 	}
 
 	// call this to append all rejected buy orders to log file
-	private static void logRejectedBuyOrder(Bid b) {
+	private static synchronized void logRejectedBuyOrder(Bid b) {
 		try {
 			PrintWriter outFile = new PrintWriter(new FileWriter(
 					REJECTED_BUY_ORDERS_LOG_FILE, true));
@@ -219,7 +222,7 @@ public class ExchangeBean {
 
 	// call this to append all matched transactions in matchedTransactions to
 	// log file and clear matchedTransactions
-	private void logMatchedTransactions() {
+	private synchronized void logMatchedTransactions() {
 		try {
 			PrintWriter outFile = new PrintWriter(new FileWriter(
 					MATCH_LOG_FILE, true));
@@ -243,7 +246,7 @@ public class ExchangeBean {
 	// returns a string of HTML table rows code containing the list of user IDs
 	// and their remaining credits
 	// this method is used by viewOrders.jsp for debugging purposes
-	public synchronized String getAllCreditRemainingForDisplay() throws Exception {
+	public String getAllCreditRemainingForDisplay() throws Exception {
 		String returnString = "";
 		ResultSet rs = DbBean.selectAllCredit();
 		while (rs.next()) {
@@ -257,57 +260,56 @@ public class ExchangeBean {
 	// this method returns false if this buy order has been rejected because of
 	// a credit limit breach
 	// it returns true if the bid has been successfully added
-	public boolean placeNewBidAndAttemptMatch(Bid newBid) throws Exception {
+	public synchronized boolean placeNewBidAndAttemptMatch(Bid newBid) throws NamingException,ClassNotFoundException {
 		// step 0: check if this bid is valid based on the buyer's credit limit
-		boolean okToContinue = validateCreditLimit(newBid);
-		if (!okToContinue) {
-			DbBean.addRejectBid(newBid);
-			return false;
-		}
+		try{
+			DbBean.dbConnection.setAutoCommit(false);
+			boolean okToContinue = validateCreditLimit(newBid);
+			if (!okToContinue) {
+				DbBean.addRejectBid(newBid);
+				DbBean.dbConnection.setAutoCommit(true);
+				return false;
+			}
 
-		// step 1: insert new bid into unfulfilledBids
-		//add new bid to database
-		DbBean.addNewBid(newBid);
-		//update new bid status to matched
+			// step 1: insert new bid into unfulfilledBids
+			//add new bid to database
+			DbBean.addNewBid(newBid);
+			//update new bid status to matched
 
 
-		// step 2: check if there is any unfulfilled asks (sell orders) for the
-		// new bid's stock. if not, just return
-		// count keeps track of the number of unfulfilled asks for this stock
-		int count = DbBean.countUnfulfilledAsk(newBid.getStock());
-		if (count == 0) {
-			return true; // no unfulfilled asks of the same stock
-		}
-		if (count == -1 ){
-			System.err.println("Error Occured!");
-		}
+			// step 2: check if there is any unfulfilled asks (sell orders) for the
+			// new bid's stock. if not, just return
+			// count keeps track of the number of unfulfilled asks for this stock
+			int count = DbBean.countUnfulfilledAsk(newBid.getStock());
+			if (count == 0) {
+				return true; // no unfulfilled asks of the same stock
+			}
+			if (count == -1 ){
+				System.err.println("Error Occured!");
+			}
 
-		// step 3: identify the current/highest bid in unfulfilledBids of the
-		// same stock
-		//Bid highestBid = getHighestBid(newBid.getStock());
-		
-		//BEGIN TRANSACTION
-		//DbBean.dbConnection.setAutoCommit(false);
-		Bid highestBid = DbBean.getHighestBid(newBid.getStock());
-	
-		// step 4: identify the current/lowest ask in unfulfilledAsks of the
-		// same stock
-		//Ask lowestAsk = getLowestAsk(newBid.getStock());
-		Ask lowestAsk = DbBean.getLowestAsk(newBid.getStock());
+			// step 3: identify the current/highest bid in unfulfilledBids of the
+			// same stock
+			//BEGIN TRANSACTION
 
-		// step 5: check if there is a match.
-		// A match happens if the highest bid is bigger or equal to the lowest
-		// ask
+			Bid highestBid = DbBean.getHighestBid(newBid.getStock());
+
+			// step 4: identify the current/lowest ask in unfulfilledAsks of the
+			// same stock
+			Ask lowestAsk = DbBean.getLowestAsk(newBid.getStock());
+
+			// step 5: check if there is a match.
+			// A match happens if the highest bid is bigger or equal to the lowest
+			// ask
 
 			if (highestBid.getPrice() >= lowestAsk.getPrice()) {
-				//unfulfilledBids.remove(highestBid);
-				//unfulfilledAsks.remove(lowestAsk);
 				// this is a BUYING trade - the transaction happens at the higest
 				// bid's timestamp, and the transaction price happens at the lowest
 				// ask
 				MatchedTransaction match = new MatchedTransaction(highestBid,
 						lowestAsk, highestBid.getDate(), lowestAsk.getPrice());
-				DbBean.addNewMatched(match);
+				matchedTransactions.add(match);
+				DbBean.addNewMatched(match,highestBid.getId(),lowestAsk.getId());
 				// to be included here: inform Back Office Server of match
 				// to be done in v1.0
 				DbBean.updateBidMatch(highestBid);
@@ -315,47 +317,60 @@ public class ExchangeBean {
 				updateLatestPrice(match);
 				logMatchedTransactions();
 				System.out.println("New Match Found: " + match.toString());
-				//DbBean.dbConnection.commit();
-				//DbBean.dbConnection.setAutoCommit(true);
+				DbBean.dbConnection.commit();
+				DbBean.dbConnection.setAutoCommit(true);
 			}
-		
+			else{
+				DbBean.dbConnection.commit();
+				DbBean.dbConnection.setAutoCommit(true);
+			}
+		}
+		catch(SQLException e){
+
+			try {
+				DbBean.dbConnection.rollback();
+				DbBean.dbConnection.setAutoCommit(true);
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
 
 		return true; // this bid is acknowledged
 	}
 
 	// call this method immediatley when a new ask (selling order) comes in
-	public void placeNewAskAndAttemptMatch(Ask newAsk) {
+	public synchronized void placeNewAskAndAttemptMatch(Ask newAsk) {
 		// step 1: insert new ask into unfulfilledAsks
 		//unfulfilledAsks.add(newAsk);
-		DbBean.getCreditRemaining(newAsk.getUserId());
-		DbBean.addNewAsk(newAsk);
+		try{
+			DbBean.dbConnection.setAutoCommit(false);
+			DbBean.addNewAsk(newAsk);
 
-		// step 2: check if there is any unfulfilled bids (buy orders) for the
-		// new ask's stock. if not, just return
-		// count keeps track of the number of unfulfilled bids for this stock
-		int count = DbBean.countUnfulfilledBid(newAsk.getStock());
-		if (count == 0 ) {
-			return; // no unfulfilled asks of the same stock
-		}
-		if(count == -1){
-			System.err.println("Error Occured!");
-			return;
-		}
-		
-		// step 3: identify the current/highest bid in unfulfilledBids of the
-		// same stock
-		//Bid highestBid = getHighestBid(newAsk.getStock());
+			// step 2: check if there is any unfulfilled bids (buy orders) for the
+			// new ask's stock. if not, just return
+			// count keeps track of the number of unfulfilled bids for this stock
+			int count = DbBean.countUnfulfilledBid(newAsk.getStock());
+			if (count == 0 ) {
+				return; // no unfulfilled asks of the same stock
+			}
+			if(count == -1){
+				System.err.println("Error Occured!");
+				return;
+			}
 
-		// step 4: identify the current/lowest ask in unfulfilledAsks of the
-		// same stock
-		//	Ask lowestAsk = getLowestAsk(newAsk.getStock());
-		Bid highestBid = DbBean.getHighestBid(newAsk.getStock());
-		// step 4: identify the current/lowest ask in unfulfilledAsks of the
-		// same stock
-		//Ask lowestAsk = getLowestAsk(newAsk.getStock());
-		Ask lowestAsk = DbBean.getLowestAsk(newAsk.getStock());
-		// step 5: check if there is a match.
-		// A match happens if the lowest ask is <= highest bid
+			// step 3: identify the current/highest bid in unfulfilledBids of the
+			// same stock
+
+			// step 4: identify the current/lowest ask in unfulfilledAsks of the
+			// same stock
+			Bid highestBid = DbBean.getHighestBid(newAsk.getStock());
+			// step 4: identify the current/lowest ask in unfulfilledAsks of the
+			// same stock
+			//Ask lowestAsk = getLowestAsk(newAsk.getStock());
+			Ask lowestAsk = DbBean.getLowestAsk(newAsk.getStock());
+			// step 5: check if there is a match.
+			// A match happens if the lowest ask is <= highest bid
 
 			if (lowestAsk.getPrice() <= highestBid.getPrice()) {
 				// a match is found!
@@ -367,22 +382,41 @@ public class ExchangeBean {
 				MatchedTransaction match = new MatchedTransaction(highestBid,
 						lowestAsk, lowestAsk.getDate(), highestBid.getPrice());
 				//matchedTransactions.add(match);
-				DbBean.addNewMatched(match);
+				DbBean.addNewMatched(match,highestBid.getId(),lowestAsk.getId());
+				matchedTransactions.add(match);
 				System.out.println("New Match Found: " + match.toString());
 				// to be included here: inform Back Office Server of match
 				// to be done in v1.0
 				DbBean.updateBidMatch(highestBid);
 				DbBean.updateAskMatch(lowestAsk);
-				
+
 				updateLatestPrice(match);
 				logMatchedTransactions();
-				
-			}}
-	
+				DbBean.dbConnection.commit();
+				DbBean.dbConnection.setAutoCommit(true);
+			}
+			else{
+				DbBean.dbConnection.commit();
+				DbBean.dbConnection.setAutoCommit(true);
+
+			}
+		}
+		catch(SQLException e){
+
+			try {
+				DbBean.dbConnection.rollback();
+				DbBean.dbConnection.setAutoCommit(true);
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+	}
+
 
 	// updates either latestPriceForSmu, latestPriceForNus or latestPriceForNtu
 	// based on the MatchedTransaction object passed in
-	private static synchronized void updateLatestPrice(MatchedTransaction m) {
+	private static void updateLatestPrice(MatchedTransaction m) {
 		String stock = m.getStock();
 		int price = m.getPrice();
 		// update the correct attribute
@@ -397,7 +431,7 @@ public class ExchangeBean {
 
 	// updates either latestPriceForSmu, latestPriceForNus or latestPriceForNtu
 	// based on the MatchedTransaction object passed in
-	public synchronized int getLatestPrice(String stock) {
+	public int getLatestPrice(String stock) throws SQLException {
 		return DbBean.getCurrentPrice(stock);
 	}
 
