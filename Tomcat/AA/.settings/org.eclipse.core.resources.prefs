@@ -1,0 +1,5 @@
+eclipse.preferences.version=1
+encoding//src/webservice/Service.java=UTF-8
+encoding//src/webservice/ServiceLocator.java=UTF-8
+encoding//src/webservice/ServiceSoap.java=UTF-8
+encoding//src/webservice/ServiceSoapStub.java=UTF-8
