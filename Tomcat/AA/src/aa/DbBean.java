@@ -35,6 +35,8 @@ public class DbBean {
 	static String dbUser = null;
 	static String dbPassword = null;
 	private static final int DAILY_CREDIT_LIMIT_FOR_BUYERS = 1000000;
+	//	static boolean primaryDatabase = true;
+	//	static int failedAttempts = 0;
 
 	//List of prepared Statement
 	private static PreparedStatement pTruncateAsks;
@@ -116,7 +118,60 @@ public class DbBean {
 
 	}
 
-	public static boolean addNewBid(Bid nBid){
+	//	public static boolean increaseDakotaTimer() {
+	//		failedAttempts++;
+	//
+	//		if (failedAttempts >= 2) {
+	//			initiateDatabaseFailover();
+	//			return true;
+	//		}
+	//		return false; // database failover false
+	//	}
+	//
+	//	public static void kickDakota() {
+	//		if (failedAttempts != 0) {
+	//			failedAttempts = 0;
+	//		}
+	//	}
+	//	private static void initiateDatabaseFailover() {
+	//		try {
+	//			if (primaryDatabase) { //swap to secondary
+	//				// connects to the database using root. change your database id/password here if necessary    
+	//				Context env = (Context) new InitialContext().lookup("java:comp/env");
+	//				dbURL = (String) env.lookup("dbURL2");
+	//				dbUser = (String) env.lookup("dbUser2");
+	//				dbPassword = (String) env.lookup("dbPassword2");
+	//
+	//				Class.forName(dbDriver);
+	//				// login credentials to your MySQL server
+	//				dbConnection = DriverManager.getConnection(dbURL, dbUser, dbPassword);
+	//				prepareStatements();
+	//
+	//				primaryDatabase = false;
+	//				kickDakota(); // success, reset counter
+	//
+	//			} else { //swap to primary
+	//				// connects to the database using root. change your database id/password here if necessary    
+	//				Context env = (Context) new InitialContext().lookup("java:comp/env");
+	//				dbURL = (String) env.lookup("dbURL");
+	//				dbUser = (String) env.lookup("dbUser");
+	//				dbPassword = (String) env.lookup("dbPassword");
+	//
+	//				Class.forName(dbDriver);
+	//				// login credentials to your MySQL server
+	//				dbConnection = DriverManager.getConnection(dbURL, dbUser, dbPassword);
+	//				prepareStatements();
+	//
+	//				primaryDatabase = true;
+	//				kickDakota(); // success, reset counter
+	//			}
+	//
+	//		} catch (Exception e) {
+	//			e.printStackTrace(); // Connection failed
+	//		}
+	//	}
+
+	public static boolean addNewBid(Bid nBid) throws SQLException {
 		try{
 
 			pAddnewBid.setString(1, nBid.getUserId());
@@ -127,37 +182,37 @@ public class DbBean {
 			pAddnewBid.setString(4,bidDateTime);
 			pAddnewBid.setString(5, "unfulfilled");
 			boolean status = pAddnewBid.execute();
-			System.out.println("New Bid: " + nBid.toString() + " Status: " + status);
+			//			kickDakota();
+			//System.out.println("New Bid: " + nBid.toString() + " Status: " + status);
 			return status;
-		}
-		catch(SQLException sqle){
-			sqle.printStackTrace();
 		}
 		catch(Exception e){
 			e.printStackTrace();
 		}
 		return false;
 	}
-	
-	public static synchronized int getCurrentPrice(String stock){
-		
-		try {
-			pSelectCurrentPrice.setString(1,stock);
-			pSelectCurrentPrice.setString(2, stock);
-			ResultSet rs = pSelectCurrentPrice.executeQuery();
-			while(rs.next()){
-				
+
+	public static int getCurrentPrice(String stock) throws SQLException{
+
+		pSelectCurrentPrice.setString(1,stock);
+		pSelectCurrentPrice.setString(2, stock);
+		ResultSet rs = pSelectCurrentPrice.executeQuery();
+		//kickDakota();
+		while(rs.next()){
+			try{
 				return rs.getInt("amt");
 			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return -1;
+			catch(NullPointerException e){
+				return -1;
+			}
+			catch(SQLException e){
+				throw e;
+			}
 		}
 		return -1;
 	}
 
-	public static boolean addNewAsk(Ask newAsk){
+	public static boolean addNewAsk(Ask newAsk) throws SQLException{
 		try{
 
 			pAddnewAsk.setString(1, newAsk.getUserId());
@@ -168,98 +223,62 @@ public class DbBean {
 			pAddnewAsk.setString(4,askDateTime);
 			pAddnewAsk.setString(5, "unfulfilled");
 			boolean status = pAddnewAsk.execute();
-			System.out.println("New Ask: " + status + " Ask Obj: " + newAsk.toString());
+			//			kickDakota();
 			return status;
-		}
-		catch(SQLException sqle){
-			sqle.printStackTrace();
 		}
 		catch(Exception e){
 			e.printStackTrace();
 		}
 		return false;
 	}
-	
-	public static synchronized int getCreditRemaining(String userId){
-		try {
-			pSelectUserCredit.setString(1,userId);
-			ResultSet rs = pSelectUserCredit.executeQuery();
-			if(rs.next()){
-				try{
-					return rs.getInt("credit_limit");
-				}
-				catch(NullPointerException e){
-					System.err.println("CATCHED NULL POINTER EXCEPTION. USER: " + userId);
-					return -1;
-				}
+
+	public static int getCreditRemaining(String userId) throws SQLException{
+		//try {
+		pSelectUserCredit.setString(1,userId);
+		ResultSet rs = pSelectUserCredit.executeQuery();
+		//	kickDakota();
+		if(rs.next()){
+			try{
+				return rs.getInt("credit_limit");
 			}
-			else{
-				//create new user and return limit
-				pAddnewCredit.setString(1,userId);
-				pAddnewCredit.setInt(2, DAILY_CREDIT_LIMIT_FOR_BUYERS);
-				pAddnewCredit.execute();
-				return DAILY_CREDIT_LIMIT_FOR_BUYERS;
+			catch(NullPointerException e){
+				System.err.println("CATCHED NULL POINTER EXCEPTION. USER: " + userId);
+				return -1;
 			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return -1;
 		}
-
+		else{
+			//create new user and return limit
+			pAddnewCredit.setString(1,userId);
+			pAddnewCredit.setInt(2, DAILY_CREDIT_LIMIT_FOR_BUYERS);
+			pAddnewCredit.execute();
+			//kickDakota();
+			return DAILY_CREDIT_LIMIT_FOR_BUYERS;
+		}
 	}
 
-	public static boolean updateBidMatch(Bid b){
-		try {
-			pUpdateBidStatus.setInt(1, b.getId());
-			return pUpdateBidStatus.execute();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return false;
+	public static boolean updateBidMatch(Bid b) throws SQLException{
+		//	try {
+		pUpdateBidStatus.setInt(1, b.getId());
+		boolean status = pUpdateBidStatus.execute();
+		//	kickDakota();
+		return status;
 	}
 
-	public static synchronized boolean updateCreditLimit(String userId, int remainingCredit){
-		try {
-			pUpdateCreditLimit.setInt(1,remainingCredit);
-			pUpdateCreditLimit.setString(2,userId);
-			return pUpdateCreditLimit.execute();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return false;
+	public static boolean updateCreditLimit(String userId, int remainingCredit) throws SQLException{
+
+		pUpdateCreditLimit.setInt(1,remainingCredit);
+		pUpdateCreditLimit.setString(2,userId);
+		boolean status = pUpdateCreditLimit.execute();
+		//	kickDakota();
+		return status;
 	}
 
-	public synchronized static int getHighestBidPrice(String stock){
-		try {
-			pSelectHighestBidPrice.setString(1, stock);
-			ResultSet rs =  pSelectHighestBidPrice.executeQuery();
-			while(rs.next()){
-				try{
-				int r =  Integer.parseInt(rs.getString("max(price)"));
-				return r;}
-				catch(NumberFormatException ef){
-					//ef.printStackTrace();
-					return -1;
-				}
-			}			
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return -1;
-		}
-		catch(NumberFormatException ne){
-			return -1;
-		}
-		return -1;
-	}
-	
-	public synchronized static ArrayList<Bid> retrieveUnfulfilledBids(String stock){
+	public static ArrayList<Bid> retrieveUnfulfilledBids(String stock) throws SQLException{
 		ArrayList<Bid> unfulfilledBid = new ArrayList<Bid>();
 		try {
 			pSelectUnfulfilledBids.setString(1, stock);
 			ResultSet rs = pSelectUnfulfilledBids.executeQuery();
+			//	kickDakota();
 			ResultSetMetaData meta = (ResultSetMetaData) rs.getMetaData();
 			while(rs.next()){
 				String bidder = rs.getString("bidder");
@@ -272,21 +291,26 @@ public class DbBean {
 				Bid b = new Bid(stockSymbol,price,bidder,dTime,aStatus,id);
 				unfulfilledBid.add(b);
 			}
-		} catch (SQLException e) {
+		} 
+		catch (SQLException e) {
+			//			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return unfulfilledBid;
+		} 
+		catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return unfulfilledBid;
 		}
 		return unfulfilledBid;
 	}
-	
-	public synchronized static ArrayList<Ask> retrieveUnfulfilledAsks(String stock){
+
+	public synchronized static ArrayList<Ask> retrieveUnfulfilledAsks(String stock) {
 		ArrayList<Ask> unfulfilledAsk = new ArrayList<Ask>();
 		try {
 			pSelectUnfulfilledAsks.setString(1, stock);
 			ResultSet rs = pSelectUnfulfilledAsks.executeQuery();
+			//	kickDakota();
 			while(rs.next()){
 				String seller = rs.getString("seller");
 				String stockSymbol = rs.getString("stock");
@@ -298,97 +322,118 @@ public class DbBean {
 				Ask a = new Ask(stockSymbol,price,seller,dTime,aStatus,id);
 				unfulfilledAsk.add(a);
 			}
-		} catch (SQLException e) {
+		}
+		catch (SQLException e) {
+			//			// TODO Auto-generated catch block
+			e.printStackTrace();
+			//			//increaseDakotaTimer();
+			return unfulfilledAsk;
+		} 
+		catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return unfulfilledAsk;
 		}
 		return unfulfilledAsk;
 	}
 	
-	
-	public synchronized static int getLowestAskPrice(String stock){
+	public static int getHighestBidPrice(String stock) {
+		try {
+			pSelectHighestBidPrice.setString(1, stock);
+			ResultSet rs =  pSelectHighestBidPrice.executeQuery();
+			//	kickDakota();
+			while(rs.next()){
+				try{
+					int r =  Integer.parseInt(rs.getString("max(price)"));
+					return r;
+					}
+				catch(NumberFormatException ef){
+					//ef.printStackTrace();
+					return -1;
+				}
+				catch(NullPointerException e){
+					return -1;
+				}
+			}			
+		} 
+		catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return -1;
+		}
+
+		return -1;
+	}
+
+	public  static int getLowestAskPrice(String stock){
 		try {
 			pSelectLowestAskPrice.setString(1,stock);
 			ResultSet rs = pSelectLowestAskPrice.executeQuery();
+			//	kickDakota();
 			while(rs.next()){
 				try{
-				int r = Integer.parseInt(rs.getString("min(price)"));}
-				catch(NumberFormatException en){
-					//en.printStackTrace();
+					int minPrice = Integer.parseInt(rs.getString("min(price)"));
+					return minPrice;
+				}
+				catch(NumberFormatException e){
+					//e.printStackTrace();
+					return -1;
+				}
+				catch(NullPointerException e){
 					return -1;
 				}
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			//increaseDakotaTimer();
+			return -1;
 		}
 
 		return -1;
 	}
-	
-	public synchronized static ResultSet selectAllCredit(){
+
+	public  static ResultSet selectAllCredit() throws SQLException{
 		ResultSet rs;
-		try {
-			rs = pSelectAllCreditLimit.executeQuery();
-			return rs;
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		}
+		rs = pSelectAllCreditLimit.executeQuery();
+		//	kickDakota();
+		return rs;
 	}
-	public static boolean addRejectBid(Bid b){
-
-		try {
-			pAddnewBid.setString(1, b.getUserId());
-			pAddnewBid.setString(2, b.getStock());
-			pAddnewBid.setInt(3, b.getPrice());
-			Date bidDate = b.getDate();
-			String bidDateTime = sdf.format(bidDate);
-			pAddnewBid.setString(4,bidDateTime);
-			pAddnewBid.setString(5, "rejected");
-			return pAddnewBid.execute();
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return false;
+	public static boolean addRejectBid(Bid b)throws SQLException{
+		pAddnewBid.setString(1, b.getUserId());
+		pAddnewBid.setString(2, b.getStock());
+		pAddnewBid.setInt(3, b.getPrice());
+		Date bidDate = b.getDate();
+		String bidDateTime = sdf.format(bidDate);
+		pAddnewBid.setString(4,bidDateTime);
+		pAddnewBid.setString(5, "rejected");
+		boolean status = pAddnewBid.execute();
+		//	kickDakota();
+		return status;
 	}
-	
-	
-	public static boolean addNewMatched(MatchedTransaction mt){
+
+
+	public static boolean addNewMatched(MatchedTransaction mt,int bid,int askid) throws SQLException{
 
 		//String sqlAddNewMatch = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?)";
-		try {
-			pAddnewMatch.setString(1,mt.getStock());
-			pAddnewMatch.setString(2,mt.getBuyerId());
-			pAddnewMatch.setString(3,mt.getSellerId());
-			pAddnewMatch.setInt(4, mt.getPrice());
-			pAddnewMatch.setString(5, sdf.format(mt.getDate()));
-			pAddnewMatch.execute();
-			return true;
-		} catch (SQLException e) {
-			/*// TODO Auto-generated catch block
-			try {
-				//dbConnection.rollback();
-			} catch (SQLException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}*/
-			e.printStackTrace();
-		}
-
-		return false;
+		//	try {
+		pAddnewMatch.setString(1,mt.getStock());
+		pAddnewMatch.setString(2,mt.getBuyerId());
+		pAddnewMatch.setString(3,mt.getSellerId());
+		pAddnewMatch.setInt(4, mt.getPrice());
+		pAddnewMatch.setString(5, sdf.format(mt.getDate()));
+		pAddnewMatch.setInt(6, bid);
+		pAddnewMatch.setInt(7,askid);
+		pAddnewMatch.execute();
+		//	kickDakota();
+		return true;
 	}
-	
-	public static synchronized Bid getHighestBid(String stock){
+
+	public static Bid getHighestBid(String stock) throws SQLException{
 		try {
 			pSelectHighestBid.setString(1,stock);
 			ResultSet rs = pSelectHighestBid.executeQuery();
+			//	kickDakota();
 			while(rs.next()){
 				String bidder = rs.getString("bidder");
 				String stockSymbol = rs.getString("stock");
@@ -401,18 +446,11 @@ public class DbBean {
 				return b;
 			}
 
-		} catch (SQLException e) {
-//			try {
-//				//.rollback();
-//			} catch (SQLException e1) {
-//				// TODO Auto-generated catch block
-//				e1.printStackTrace();
-//			}
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-		} catch (ParseException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
+		}  
+		catch (ParseException e) {
+			//			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
 		}
 		catch(NullPointerException nfe){
 			System.err.println("Highest bid NULL POINTER EXCEPTION CATCHED");
@@ -421,11 +459,12 @@ public class DbBean {
 		return null;
 	}
 
-	public static synchronized Ask getLowestAsk(String stock){
-		
+	public static  Ask getLowestAsk(String stock) throws SQLException{
+
 		try {
 			pSelectLowestAsk.setString(1,stock);
 			ResultSet rs = pSelectLowestAsk.executeQuery();
+			//	kickDakota();
 			while(rs.next()){
 				String seller = rs.getString("seller");
 				String stockSymbol = rs.getString("stock");
@@ -438,65 +477,42 @@ public class DbBean {
 				return a;
 			}
 
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-//			try {
-//				dbConnection.rollback();
-//			} catch (SQLException e1) {
-//				// TODO Auto-generated catch block
-//				e1.printStackTrace();
-//			}
-//			e.printStackTrace();
-		} catch (ParseException e) {
-//			// TODO Auto-generated catch block
+		}
+		catch (ParseException e) {
+			//			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
 	}
 
-	public static boolean updateAskMatch(Ask a){
-		try {
-			pUpdateAskStatus.setInt(1,a.getId());
-			return pUpdateAskStatus.execute();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return false;
+	public static boolean updateAskMatch(Ask a) throws SQLException{
+		pUpdateAskStatus.setInt(1,a.getId());
+		boolean status = pUpdateAskStatus.execute();
+		//kickDakota();
+		return status;
 	}
-	
-	public static synchronized int countUnfulfilledBid(String stock){
-		try {
-			pCountUnfulfilledBid.setString(1, stock);
-			ResultSet rs = pCountUnfulfilledBid.executeQuery();
-			while(rs.next()){
-				return rs.getInt("unfulfilledCount");
-			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+
+	public static int countUnfulfilledBid(String stock) throws SQLException{
+		pCountUnfulfilledBid.setString(1, stock);
+		ResultSet rs = pCountUnfulfilledBid.executeQuery();
+		//kickDakota();
+		while(rs.next()){
+			return rs.getInt("unfulfilledCount");
 		}
-		
+
 		return -1;
 	}
-	
-	public static int countUnfulfilledAsk(String stock){
-		try {
-			pCountUnfulfilledAsk.setString(1, stock);
-			ResultSet rs = pCountUnfulfilledAsk.executeQuery();
-			while(rs.next()){
-				try{
-				return rs.getInt("unfulfilledCount");
-				}
-				catch(Exception e){
-					return 0;
-				}
-			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+
+	public static int countUnfulfilledAsk(String stock) throws SQLException{
+		pCountUnfulfilledAsk.setString(1, stock);
+		ResultSet rs = pCountUnfulfilledAsk.executeQuery();
+		//kickDakota();
+		while(rs.next()){
+
+			return rs.getInt("unfulfilledCount");
+
+
 		}
-		
 		return -1;
 	}
 
@@ -511,13 +527,13 @@ public class DbBean {
 			pTruncateAsks = (PreparedStatement) dbConnection.prepareStatement(sqlDeleteAllAsks);
 			String sqlDeleteAllCredits = "set sql_safe_updates = 0; delete from credit where credit_limit >= ?";
 			pTruncateCredit = (PreparedStatement) dbConnection.prepareStatement(sqlDeleteAllCredits);
-			
+
 			//Add
 			String sqlAddNewAsk = "Insert into ask (seller,stock,price,time,status) value (?,?,?,?,?)";
 			pAddnewAsk = (PreparedStatement) dbConnection.prepareStatement(sqlAddNewAsk);
 			String sqlAddNewBid = "Insert into bid (bidder,stock,price,time,status) value (?,?,?,?,?)";
 			pAddnewBid = (PreparedStatement) dbConnection.prepareStatement(sqlAddNewBid);
-			String sqlAddNewMatch = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?)";
+			String sqlAddNewMatch = "Insert into matched (stock, bidder, seller, amt, datetime,bidid,askid) values (?,?,?,?,?,?,?)";
 			pAddnewMatch = (PreparedStatement)dbConnection.prepareStatement(sqlAddNewMatch);
 			String sqlAddNewCredit = "Insert into credit (userid, credit_limit) values (?,?)";
 			pAddnewCredit = (PreparedStatement)dbConnection.prepareStatement(sqlAddNewCredit);
@@ -526,9 +542,9 @@ public class DbBean {
 			pSelectLowestAsk = (PreparedStatement)dbConnection.prepareStatement(sqlGetMinAsk);
 			String sqlGetMaxBid = "Select bidder,stock,price,time,status,id from bid where stock = ? and status = 'unfulfilled' order by price desc, time asc limit 1 for update";
 			pSelectHighestBid = (PreparedStatement)dbConnection.prepareStatement(sqlGetMaxBid);
-			String sqlSelectHighestBidP = "select max(price) from bid where stock = ?";
+			String sqlSelectHighestBidP = "select max(price) from bid where stock = ? and status = 'unfulfilled' ";
 			pSelectHighestBidPrice = (PreparedStatement)dbConnection.prepareStatement(sqlSelectHighestBidP);
-			String sqlSelectLowestAskP = "select min(price) from ask where stock = ?";
+			String sqlSelectLowestAskP = "select min(price) from ask where stock = ? and status = 'unfulfilled'";
 			pSelectLowestAskPrice = (PreparedStatement)dbConnection.prepareStatement(sqlSelectLowestAskP);
 
 			String sqlSelectUserCredit = "select credit_limit from credit where userid = ? ";
@@ -539,23 +555,23 @@ public class DbBean {
 			pUpdateBidStatus =  (PreparedStatement) dbConnection.prepareStatement(sqlUpdateBidStatus);
 			String sqlUpdateAskStatus =  "Update exchange.ask set status='matched' where id = ? ";
 			pUpdateAskStatus=(PreparedStatement) dbConnection.prepareStatement(sqlUpdateAskStatus);
-			
+
 			String sqlCountUnfulfilledBid = "Select Count(*) as unfulfilledCount from bid where status = 'unfulfilled' and stock = ?";
 			pCountUnfulfilledBid = (PreparedStatement) dbConnection.prepareStatement(sqlCountUnfulfilledBid);
 			String sqlCountUnfulfilledAsk = "Select Count(*) as unfulfilledCount from ask where status = 'unfulfilled' and stock = ?";
 			pCountUnfulfilledAsk = (PreparedStatement) dbConnection.prepareStatement(sqlCountUnfulfilledAsk);
-		
+
 			String sqlSelectUnfulfilledBids = "Select bidder,stock,price,time,status,id from exchange.bid where stock = ? and status = 'unfulfilled'";
 			pSelectUnfulfilledBids =(PreparedStatement) dbConnection.prepareStatement(sqlSelectUnfulfilledBids); 
-			
+
 			String sqlSelectUnfulfilledAsks = "Select seller,stock,price,time,status,id from exchange.ask where stock = ? and status = 'unfulfilled'";
 			pSelectUnfulfilledAsks =(PreparedStatement) dbConnection.prepareStatement(sqlSelectUnfulfilledAsks); 
-		
+
 			String sqlSelectCurrentPrice = "select amt from matched where stock = ? and datetime = (select max(datetime) from matched where stock = ?)";
 			pSelectCurrentPrice = (PreparedStatement) dbConnection.prepareStatement(sqlSelectCurrentPrice); 
 			String sqlSelectAllCreditLimit = "select * from credit";
 			pSelectAllCreditLimit = (PreparedStatement) dbConnection.prepareStatement(sqlSelectAllCreditLimit); 
-			
+
 			String sqlDeleteMatched = "set sql_safe_updates = 0; delete from matched where amt >= ?";
 			pTruncateMatched = (PreparedStatement) dbConnection.prepareStatement(sqlDeleteMatched); 
 		}
@@ -569,9 +585,9 @@ public class DbBean {
 			ne.printStackTrace();
 		}
 	}
-	
+
 	private static void prepareIndexStatement(){
-		
+
 		try {
 			connect();
 			String cCreateIndex = "call create_index_if_not_exists(?,?)";
@@ -588,45 +604,45 @@ public class DbBean {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
-	
+
 	public static void addIndex(){
-		
+
 		try {
 			prepareIndexStatement();
 			pAddIndex.setString(1,"ask");
 			pAddIndex.setString(2,"price");
 			pAddIndex.execute();
-			
+
 			pAddIndex.setString(1,"ask");
 			pAddIndex.setString(2,"stock");
 			pAddIndex.execute();
-			
+
 			pAddIndex.setString(1,"ask");
 			pAddIndex.setString(2,"status");
 			pAddIndex.execute();
-			
+
 			pAddIndex.setString(1,"bid");
 			pAddIndex.setString(2,"price");
 			pAddIndex.execute();
-			
+
 			pAddIndex.setString(1,"bid");
 			pAddIndex.setString(2,"stock");
 			pAddIndex.execute();
-			
+
 			pAddIndex.setString(1,"bid");
 			pAddIndex.setString(2,"status");
 			pAddIndex.execute();
-			
+
 			pAddIndex.setString(1, "credit");
 			pAddIndex.setString(2,"userid");
 			pAddIndex.execute();
-			
+
 			pAddIndex.setString(1,"matched");
 			pAddIndex.setString(2,"stock");
 			pAddIndex.execute();
-		
+
 			pAddIndex.setString(1,"matched");
 			pAddIndex.setString(2,"datetime");
 			pAddIndex.execute();
@@ -634,40 +650,40 @@ public class DbBean {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
-	
+
 	public static void deleteIndex(){
 		try{
 			prepareIndexStatement();
 			pDeleteIndex.setString(1,"ask");
 			pDeleteIndex.setString(2,"stock");
 			pDeleteIndex.execute();
-			
+
 			pDeleteIndex.setString(1,"ask");
 			pDeleteIndex.setString(2,"status");
 			pDeleteIndex.execute();
-		
+
 			pDeleteIndex.setString(1,"ask");
 			pDeleteIndex.setString(2,"price");
 			pDeleteIndex.execute();
-			
+
 			pDeleteIndex.setString(1,"bid");
 			pDeleteIndex.setString(2,"stock");
 			pDeleteIndex.execute();
-			
+
 			pDeleteIndex.setString(1,"bid");
 			pDeleteIndex.setString(2,"status");
 			pDeleteIndex.execute();
-		
+
 			pDeleteIndex.setString(1,"bid");
 			pDeleteIndex.setString(2,"price");
 			pDeleteIndex.execute();
-			
+
 			pDeleteIndex.setString(1,"credit");
 			pDeleteIndex.setString(2,"userid");
 			pDeleteIndex.execute();
-			
+
 			pDeleteIndex.setString(1,"matched");
 			pDeleteIndex.setString(2,"stock");
 			pDeleteIndex.execute();
@@ -679,10 +695,10 @@ public class DbBean {
 		catch(SQLException e){
 			e.printStackTrace();
 		}
-		
+
 	}
 
-	
+
 	public static void close() throws SQLException {
 		if (dbConnection != null && !dbConnection.isClosed()) {
 			dbConnection.close();
