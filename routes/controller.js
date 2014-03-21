@@ -77,13 +77,15 @@ db.connection(function(connection){
 					// 	return;
 					// }
 					if(highestBid.length<1||lowestAsk.length < 1){callback(true);}
+					
+
 					if (lowestAsk[0].price <= highestBid[0].price) {
 						if(type === 'bid'){
 							var match = {
 								highestBid: highestBid[0],
 								lowestAsk: lowestAsk[0],
 								date: highestBid[0].time,
-								price: highestBid[0].price,
+								price: lowestAsk[0].price,
 								stock:highestBid[0].stock
 							};
 						}else{
@@ -91,7 +93,7 @@ db.connection(function(connection){
 								highestBid: highestBid[0],
 								lowestAsk: lowestAsk[0],
 								date: lowestAsk[0].time,
-								price: lowestAsk[0].price,
+								price: highestBid[0].price,
 								stock:highestBid[0].stock
 							};
 						}
@@ -106,42 +108,46 @@ db.connection(function(connection){
 									console.log('rollback!');
 									throw err;
 								});
-							}
-							var query5 = "Update exchange.ask set status='matched' where id = ?; ";
-							connection.query(query5,[lowestAsk[0].id], function(err, docs) {
+							}else{
+								var query5 = "Update exchange.ask set status='matched' where id = ?; ";
+								connection.query(query5,[lowestAsk[0].id], function(err, docs) {
 
-								if(docs.changedRows!==1||err){
-									console.log('da update2',err);
-									connection.rollback(function() {
-										console.log('rollback!');
-										throw err;
-									});
-								}
-								var query3 = "Insert into matched (stock, bidder, seller, amt, datetime,askid,bidid) values (?,?,?,?,?,?,?);";
-								connection.query(query3,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date,lowestAsk[0].id,highestBid[0].id], function(err, docs) {
-
-									if(docs.affectedRows!==1||err){
-										console.log('da update1',err);
+									if(docs.changedRows!==1||err){
+										console.log('da update2',err);
 										connection.rollback(function() {
 											console.log('rollback!');
 											throw err;
 										});
+									}else{
+										var query3 = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?);";
+										connection.query(query3,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
+
+											if(docs.affectedRows!==1||err){
+												console.log('da update1',err);
+												connection.rollback(function() {
+													console.log('rollback!');
+													throw err;
+												});
+											}else{
+												connection.commit(function(err) {
+													if(err){
+														connection.rollback(function() {
+															console.log('rollback!');
+															throw err;
+														});
+													}
+													logMatchedTransactions(match);
+													connection.release();
+													callback(true);
+													return;
+												});
+											
+											}
+										});
 									}
-									logMatchedTransactions(match);
-									connection.commit(function(err) {
-										if(err){
-											connection.rollback(function() {
-												console.log('rollback!');
-												throw err;
-											});
-										}
-										connection.release();
-										callback(true);
-										return;
-									});
 								});
-							});
-});
+							}
+						});
 }
 connection.commit(function(err) {
 	if(err){
@@ -470,7 +476,7 @@ exports.getLatestPrice = function(stock,callback) {
 };
 
 exports.getHighestBidPrice = function(stock,callback) {
-	var query = "SELECT price from bid where stock = ? order by price desc limit 1;" ;
+	var query = "SELECT price from bid where stock = ? and status = 'unfulfilled' order by price desc limit 1;" ;
 	connection.query(query,[stock], function(err, docs) {
 		if(isEmptyObject(docs)){
 			callback('-1');
@@ -481,7 +487,7 @@ exports.getHighestBidPrice = function(stock,callback) {
 };
 
 exports.getLowestAskPrice = function(stock,callback) {
-	var query = "SELECT price from ask where stock = ? order by price asc limit 1;" ;
+	var query = "SELECT price from ask where stock = ? and status = 'unfulfilled' order by price asc limit 1;" ;
 	connection.query(query,[stock], function(err, docs) {
 		if(isEmptyObject(docs)){
 			callback('-1');
