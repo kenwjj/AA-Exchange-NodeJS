@@ -47,7 +47,8 @@ if (cluster.isMaster && config.clustering) {
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded());
     app.use(cookieParser());
-    app.use(express.session({secret: config.secret,store: new MySQLStore(config.sessionOptions)}));
+    app.use(express.cookieSession({ secret: config.secret, cookie: { maxAge: 60 * 60 * 1000 }}));
+    // app.use(express.session({secret: config.secret,store: new MySQLStore(config.sessionOptions)}));
     app.use(routes.appendLocalsToUseInViews);
     app.use(express.static(path.join(__dirname, 'public')));
     app.use(app.router);
