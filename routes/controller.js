@@ -110,7 +110,7 @@ db.connection(function(connection){
 						var query4 = "Update exchange.bid set status='matched' where id = ?;";
 						connection.query(query4,[highestBid[0].id], function(err, docs) {
 
-							if(err||docs.changedRows!==1){
+							if(err){
 								console.log('da update1',err);
 								connection.rollback(function() {
 									console.log('rollback!');
@@ -120,7 +120,7 @@ db.connection(function(connection){
 								var query5 = "Update exchange.ask set status='matched' where id = ?; ";
 								connection.query(query5,[lowestAsk[0].id], function(err, docs) {
 
-									if(err||docs.changedRows!==1){
+									if(err){
 										console.log('da update2',err);
 										connection.rollback(function() {
 											console.log('rollback!');
@@ -130,7 +130,7 @@ db.connection(function(connection){
 										var query3 = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?);";
 										connection.query(query3,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
 
-											if(docs.affectedRows!==1||err){
+											if(`!==1||err){
 												console.log('da update1',err);
 												connection.rollback(function() {
 													console.log('rollback!');
