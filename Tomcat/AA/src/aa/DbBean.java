@@ -354,6 +354,9 @@ public class DbBean {
 				catch(NullPointerException e){
 					return -1;
 				}
+				catch(SQLException e){
+					return -1;
+				}
 			}			
 		} 
 		catch (SQLException e) {
@@ -380,6 +383,9 @@ public class DbBean {
 					return -1;
 				}
 				catch(NullPointerException e){
+					return -1;
+				}
+				catch(SQLException e){
 					return -1;
 				}
 			}
