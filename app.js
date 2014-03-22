@@ -100,7 +100,7 @@ if (cluster.isMaster && config.clustering) {
     });
 
     var debug = require('debug')('my-application');
-    app.set('port', process.env.PORT || 8081);
+    app.set('port', process.env.PORT || config.listenport);
 
     var server = app.listen(app.get('port'), function() {
       console.log('Express server listening on port ' + server.address().port);
