@@ -54,6 +54,8 @@ exports.pool = function(callback){
 		connection.on('error', function(err) {
 			if(err.code === 'PROTOCOL_CONNECTION_LOST'){
 				console.log('DB Disconnection',err); // 'ER_BAD_DB_ERROR'
+			}else{
+				console.log(err);
 			}
 		});
 	callback(poolCluster,connection);

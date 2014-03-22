@@ -35,7 +35,7 @@ db.pool(function(pool){
 									throw err;
 								});
 							}
-							connection.release();
+							
 							// callback(true);
 							// return;
 						});
@@ -45,6 +45,7 @@ db.pool(function(pool){
 								return;
 							}
 							matchStock(bid,'bid',function(status){
+								connection.release();
 								callback(status);
 								return;
 							});
@@ -64,12 +65,11 @@ db.pool(function(pool){
 					connection.commit(function(err) {
 						if(err){
 							connection.rollback(function() {
-								connection.release();
+								
 								console.log('rollback!');
 								throw err;
 							});
 						}
-						connection.release();
 					});
 					getUnfulfilledBids(ask.stock,function(list){
 						if(list.length === 0){
@@ -77,6 +77,7 @@ db.pool(function(pool){
 							return;
 						}
 						matchStock(ask,'ask',function(status){
+							connection.release();
 							callback(status);
 							return;
 						});
@@ -122,7 +123,7 @@ db.pool(function(pool){
 									connection.rollback(function() {
 										console.log('rollback!');
 									// throw err;
-								});
+									});
 								}else{
 									var query5 = "Update exchange.ask set status='matched' where id = ?; ";
 									connection.query(query5,[lowestAsk[0].id], function(err, docs) {
@@ -171,6 +172,7 @@ connection.commit(function(err) {
 			throw err;
 		});
 	}
+	connection.release();
 	callback(true);
 	return;
 });
