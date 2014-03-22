@@ -152,16 +152,18 @@ db.pool(function(pool){
 															// throw err;
 														});
 														}
-														logMatchedTransactions(match,function(){
-															bo.sendToBackOffice(function(status){
-																if(status){
-																	console.log('Successfully sent to back office!');
-																}else{
-																	console.log('Something went wrong with BackOffice operation!');
-																}
-															});
+														logMatchedTransactions(match);
+
+														
+														bo.sendToBackOffice(match,function(status){
+															if(status){
+																console.log('Successfully sent to back office!');
+															}else{
+																console.log('Something went wrong with BackOffice operation!');
+															}
 														});
 														
+
 														connection.release();
 														callback(true);
 														return;
@@ -303,7 +305,7 @@ exports.endTradingDay = function(){
 						}
 						if(config.sendtobackoffice){
 						// Send to BackOffice
-						bo.sendToBackOffice(function(status){
+						bo.sendToBackOfficeEnd(function(status){
 							if(status){
 								console.log('Successfully sent to back office!');
 							}else{
@@ -502,7 +504,7 @@ function logRejectedBuyOrder(bid) {
 exports.logMatchedTransactions = function(match,rep){
 	logMatchedTransactions(match,rep);
 };
-function logMatchedTransactions(match,rep,callback) {
+function logMatchedTransactions(match,rep) {
 
 	var matchString = '';
 	if(rep ==='rep'){
@@ -510,20 +512,17 @@ function logMatchedTransactions(match,rep,callback) {
 	}else{
 		matchString  = "stock: " + match.stock + ", price: " + match.price + ", bidder userId: " + match.highestBid.bidder + ", seller userId: " + match.lowestAsk.seller +", date: " + match.date.toString() + "\r\n";
 	}
-	fs.appendFile(matchedLocation, matchString, function(err){
-		if(err) {
-			console.log('logMatchedTransactions',err);
-		} else {
-			
-			// console.log("Match recorded!\n"+matchString);
-			if(rep !== 'rep' && config.syncmatch){
-				sendRequest(config.host,matchString,function(text){
-				// console.log(text);
-			});
-			}
-			callback();
-		}
+	fs.appendFileSync(matchedLocation, matchString);
+
+	// console.log("Match recorded!\n"+matchString);
+	if(rep !== 'rep' && config.syncmatch){
+		sendRequest(config.host,matchString,function(text){
+		// console.log(text);
+		// callback(true);
 	});
+	}
+	// callback(true);
+	
 }
 function sendRequest(host,matchString,callback){
 	var http = require('http');
