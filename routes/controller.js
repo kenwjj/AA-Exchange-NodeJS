@@ -130,7 +130,7 @@ db.connection(function(connection){
 										var query3 = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?);";
 										connection.query(query3,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
 
-											if(`!==1||err){
+											if(err){
 												console.log('da update1',err);
 												connection.rollback(function() {
 													console.log('rollback!');
