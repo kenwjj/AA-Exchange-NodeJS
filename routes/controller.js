@@ -25,7 +25,7 @@ db.connection(function(connection){
 			}
 			bid.status = true;
 			bid.status = 'unfulfilled';
-			connection.beginTransactingion(function(err) {
+			connection.beginTransaction(function(err) {
 				addBid(bid, function(code){
 					connection.commit(function(err) {
 						if(err){
@@ -110,7 +110,7 @@ db.connection(function(connection){
 						var query4 = "Update exchange.bid set status='matched' where id = ?;";
 						connection.query(query4,[highestBid[0].id], function(err, docs) {
 
-							if(docs.changedRows!==1||err){
+							if(err||docs.changedRows!==1){
 								console.log('da update1',err);
 								connection.rollback(function() {
 									console.log('rollback!');
@@ -120,7 +120,7 @@ db.connection(function(connection){
 								var query5 = "Update exchange.ask set status='matched' where id = ?; ";
 								connection.query(query5,[lowestAsk[0].id], function(err, docs) {
 
-									if(docs.changedRows!==1||err){
+									if(err||docs.changedRows!==1){
 										console.log('da update2',err);
 										connection.rollback(function() {
 											console.log('rollback!');
