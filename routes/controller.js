@@ -114,7 +114,7 @@ db.connection(function(connection){
 								console.log('da update1',err);
 								connection.rollback(function() {
 									console.log('rollback!');
-									throw err;
+									// throw err;
 								});
 							}else{
 								var query5 = "Update exchange.ask set status='matched' where id = ?; ";
@@ -127,21 +127,21 @@ db.connection(function(connection){
 											throw err;
 										});
 									}else{
-										var query3 = "Insert into matched (stock, bidder, seller, amt, datetime) values (?,?,?,?,?);";
-										connection.query(query3,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date], function(err, docs) {
+										var query3 = "Insert into matched (stock, bidder, seller, amt, datetime,bidid,askid) values (?,?,?,?,?,?,?);";
+										connection.query(query3,[match.stock, match.highestBid.bidder, match.lowestAsk.seller, match.price,match.date,highestBid[0].id,lowestAsk[0].id], function(err, docs) {
 
 											if(err){
 												console.log('da update1',err);
 												connection.rollback(function() {
 													console.log('rollback!');
-													throw err;
+													// throw err;
 												});
 											}else{
 												connection.commit(function(err) {
 													if(err){
 														connection.rollback(function() {
 															console.log('rollback!');
-															throw err;
+															// throw err;
 														});
 													}
 													logMatchedTransactions(match);
