@@ -153,8 +153,6 @@ db.pool(function(pool){
 														});
 														}
 														logMatchedTransactions(match);
-
-														
 														bo.sendToBackOffice(match,function(status){
 															if(status){
 																console.log('Successfully sent to back office!');
@@ -489,7 +487,6 @@ function isEmptyObject(obj) {
 	return !Object.keys(obj).length;
 }
 
-
 // ================ Logging  ================ 
 function logRejectedBuyOrder(bid) {
 	var bidString = "stock: " + bid.stock + ", price: " + bid.price + ", userId: " + bid.username + ", date: " + bid.date.toString() + "\r\n";
@@ -514,15 +511,10 @@ function logMatchedTransactions(match,rep) {
 	}
 	fs.appendFileSync(matchedLocation, matchString);
 
-	// console.log("Match recorded!\n"+matchString);
 	if(rep !== 'rep' && config.syncmatch){
 		sendRequest(config.host,matchString,function(text){
-		// console.log(text);
-		// callback(true);
-	});
+		});
 	}
-	// callback(true);
-	
 }
 function sendRequest(host,matchString,callback){
 	var http = require('http');
@@ -541,11 +533,8 @@ function sendRequest(host,matchString,callback){
 			res.on('data', function(chunk) {
 				result += chunk;
 			});
-
 			res.on('end', function() {
-
-				console.log('Match Log Sync Success');
-				
+				// console.log('Match Log Sync Success');
 			});
 
 		}).on("error", function(e){

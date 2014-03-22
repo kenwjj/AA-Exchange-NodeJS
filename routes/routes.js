@@ -157,7 +157,7 @@ exports.view = function(req, res){
 exports.end = function(req, res){
 
 	controller.endTradingDay();
-	req.session.destroy();
+	// req.session.destroy();
 	res.render('endTradingDay');
 };
 
