@@ -98,9 +98,9 @@ if (cluster.isMaster && config.clustering) {
             error: {}
         });
     });
-    process.on('uncaughtException', function (err) {
-          console.log('Caught exception: ' + err);
-    });
+    // process.on('uncaughtException', function (err) {
+    //       console.log('Caught exception: ' + err);
+    // });
     var debug = require('debug')('my-application');
     app.set('port', process.env.PORT || config.listenport);
 

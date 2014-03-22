@@ -35,8 +35,8 @@ if(config.mode ==='local'){
 
 	config.slavedbhost = '192.168.0.2';	// secondary db host
 	config.slavedbport = 7000;			// secondary db port
-	config.slavelogin = 'user';			// secondary db user
-	config.slavepass = 'user';			// secondary db pass
+	config.slavelogin = 'temp';			// secondary db user
+	config.slavepass = '';			// secondary db pass
 
 	// Only used in mysqlSessions mode
 	config.sessionOptions = {

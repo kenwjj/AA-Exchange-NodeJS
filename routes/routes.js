@@ -9,7 +9,8 @@ exports.login = function(req, res){
 	res.render('login');
 };
 exports.logout = function(req, res){
-	req.session.destroy();
+	// req.session.destroy();
+	req.session = null;
 	res.render('logout');
 };
 
