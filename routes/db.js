@@ -6,7 +6,8 @@ var poolCluster;
 // create
 var clusterConfig = {
 	removeNodeErrorCount: 1, // Remove the node immediately when connection fails.
-	defaultSelector: 'ORDER'
+	defaultSelector: 'ORDER',
+	canRetry: true
 };
 var masterConfig = {
 	host     : config.masterdbhost,
@@ -27,12 +28,19 @@ exports.connection = function(callback){
 
 	poolCluster = mysql.createPoolCluster(clusterConfig);
 	poolCluster.add('MASTER', masterConfig);
-	poolCluster.add('SLAVE', slaveConfig);
+	for(var i = 0; i < 20; i++){
+		poolCluster.add('SLAVE'+i, slaveConfig);
+	}
+	// poolCluster.add('SLAVE', slaveConfig);
 	// callback(poolCluster);
 	poolCluster.getConnection(function (err, connection) {
 		connection.on('error', function(err) {
 			if(err.code === 'PROTOCOL_CONNECTION_LOST'){
 				console.log('DB Disconnection',err); // 'ER_BAD_DB_ERROR'
+				poolCluster.add('MASTER', masterConfig);
+				poolCluster.getConnection(function (err, connection) {
+					callback(connection);
+				});
 				// var down = true;
 				// poolCluster.getConnection(function (err, connection) {
 				// 	callback(connection);

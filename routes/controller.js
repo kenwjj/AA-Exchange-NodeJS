@@ -123,7 +123,7 @@ db.pool(function(pool){
 									connection.rollback(function() {
 										console.log('rollback!');
 									// throw err;
-									});
+								});
 								}else{
 									var query5 = "Update exchange.ask set status='matched' where id = ?; ";
 									connection.query(query5,[lowestAsk[0].id], function(err, docs) {
@@ -152,7 +152,16 @@ db.pool(function(pool){
 															// throw err;
 														});
 														}
-														logMatchedTransactions(match);
+														logMatchedTransactions(match,function(){
+															bo.sendToBackOffice(function(status){
+																if(status){
+																	console.log('Successfully sent to back office!');
+																}else{
+																	console.log('Something went wrong with BackOffice operation!');
+																}
+															});
+														});
+														
 														connection.release();
 														callback(true);
 														return;
@@ -160,8 +169,8 @@ db.pool(function(pool){
 
 												}
 											});
-										}
-									});
+}
+});
 }
 });
 }
@@ -493,7 +502,7 @@ function logRejectedBuyOrder(bid) {
 exports.logMatchedTransactions = function(match,rep){
 	logMatchedTransactions(match,rep);
 };
-function logMatchedTransactions(match,rep) {
+function logMatchedTransactions(match,rep,callback) {
 
 	var matchString = '';
 	if(rep ==='rep'){
@@ -507,11 +516,12 @@ function logMatchedTransactions(match,rep) {
 		} else {
 			
 			// console.log("Match recorded!\n"+matchString);
-		}
-		if(rep !== 'rep' && config.syncmatch){
-			sendRequest(config.host,matchString,function(text){
+			if(rep !== 'rep' && config.syncmatch){
+				sendRequest(config.host,matchString,function(text){
 				// console.log(text);
 			});
+			}
+			callback();
 		}
 	});
 }
