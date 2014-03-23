@@ -18,41 +18,40 @@ db.pool(function(pool){
 			if (!okToContinue) {
 				status = false;
 				bid.status = 'rejected';
-				
-				addBid(bid, function(){
-					logRejectedBuyOrder(bid);
-					callback(false);
-					return;
-				});
-			}
-			bid.status = true;
-			bid.status = 'unfulfilled';
-			pool.getConnection(function (err, connection) {
-				connection.beginTransaction(function(err) {
-					addBid(bid, function(code){
-						connection.commit(function(err) {
-							if(err){
-								connection.rollback(function() {
-									console.log('rollback!');
-									throw err;
+				logRejectedBuyOrder(bid);
+				callback(false);
+				return;
+			}else{
+				bid.status = true;
+				bid.status = 'unfulfilled';
+				pool.getConnection(function (err, connection) {
+					connection.beginTransaction(function(err) {
+						addBid(bid, function(code){
+							connection.commit(function(err) {
+								if(err){
+									connection.rollback(function() {
+										console.log('rollback!');
+										throw err;
+									});
+								}
+							});
+							getUnfulfilledAsks(bid.stock,function(list){
+								if(list.length === 0){
+									callback(true);
+									return;
+								}
+								matchStock(bid,'bid',function(status){
+									connection.release();
+									callback(status);
+									return;
 								});
-							}
-						});
-						getUnfulfilledAsks(bid.stock,function(list){
-							if(list.length === 0){
-								callback(true);
-								return;
-							}
-							matchStock(bid,'bid',function(status){
-								connection.release();
-								callback(status);
-								return;
 							});
 						});
 					});
+					
 				});
-				
-			});
+			}
+			
 		});
 	};
 	exports.placeNewAskAndAttemptMatch = function(ask,callback) {
@@ -213,10 +212,10 @@ function validateCreditLimit(bid, callback) {
 					var query = 'select credit_limit from credit where userid = ?;';
 					connection.query(query,bid.username, function(err, docs) {
 
-					var query2 = 'update credit set credit_limit=? where userid=?';
+						var query2 = 'update credit set credit_limit=? where userid=?';
 						connection.query(query2, [newAmt, bid.username],function(err, docs) {
 							if(err){
-							console.log('setCreditRemaining',err);
+								console.log('setCreditRemaining',err);
 							}
 							connection.commit(function(err) {
 								if(err){
@@ -233,7 +232,7 @@ function validateCreditLimit(bid, callback) {
 				}
 			});
 		});
-	});
+});
 }
 
 function getCreditRemaining(connection, username,callback) {
