@@ -1,4 +1,5 @@
 var controller = require('./controller');
+var bo = require('./backoffice');
 var async = require('async');
 
 exports.index = function(req, res){
@@ -151,21 +152,44 @@ exports.view = function(req, res){
 				res.render('viewOrders',{smuBids:smuBids,smuAsks:smuAsks,nusBids:nusBids,nusAsks:nusAsks,ntuBids:ntuBids,ntuAsks:ntuAsks,getAllCreditRemainingForDisplay:getAllCreditRemainingForDisplay});
 			});
 		});
-	});		
+	});
 };
-
 exports.end = function(req, res){
 
 	controller.endTradingDay();
 	// req.session.destroy();
 	res.render('endTradingDay');
 };
-
+exports.clear = function(req, res){
+	bo.clearBackoffice(function(status){
+		if(status){
+			res.end('Success');
+		}else{
+			res.end('Failure');
+		}
+	});
+};
 
 exports.matchlog = function(req, res){
 	var match = req.query.match;
 	controller.logMatchedTransactions(match,'rep');
 	res.json({ status: 'true' });
+};
+
+exports.batchsend = function(req,res){
+	var config = require('../config/config');
+	bo.clearBackoffice(function(status){
+		if(status && config.sendtobackoffice){
+			// Send to BackOffice
+			bo.sendToBackOfficeEnd(function(check){
+				if(check){
+					res.end('Successfully sent to back office!');
+				}else{
+					res.end('Something went wrong with BackOffice operation!');
+				}
+			});
+		}
+	});
 };
 
 exports.appendLocalsToUseInViews = function(req, res, next){

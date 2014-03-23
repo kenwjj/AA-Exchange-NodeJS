@@ -7,21 +7,11 @@ var filename = config.matchedLocation;
 
 exports.sendToBackOffice = function(match,callback){
 
-	var url = soapURLPrimary;
-	if(!checkConnection(soapURLPrimary)){
-		console.log('Primary BackOffice is down');
-		if(checkConnection(soapURLSecondary)){
-			url = soapURLSecondary;
-		}else{
-			console.log('Both BackOffices are down');
-			return false;
+	checkConnection(soapURLPrimary,soapURLSecondary,function(url){
+		if(url==='down'){
+			callback(false);
 		}
-	}
-	// var status = true;
-	// require('readline').createInterface({
-	// 	input: fs.createReadStream(filename),
-	// 	terminal: false
-	// }).on('line', function(line){
+
 		var line  = "stock: " + match.stock + ", price: " + match.price + ", bidder userId: " + match.highestBid.bidder + ", seller userId: " + match.lowestAsk.seller +", date: " + match.date.toString() + "\r\n";
 		var args = {teamId: config.username,teamPassword:config.password, transactionDescription:line};
 
@@ -44,92 +34,101 @@ exports.sendToBackOffice = function(match,callback){
 			}
 			
 		});
-
-	// }).on('close', function(){
-	// 	callback(status);
-	// });
+	});
 };
 exports.sendToBackOfficeEnd = function(callback){
 
-var url = soapURLPrimary;
-	if(!checkConnection(soapURLPrimary)){
-		console.log('Primary BackOffice is down');
-		if(checkConnection(soapURLSecondary)){
-			url = soapURLSecondary;
-		}else{
-			console.log('Both BackOffices are down');
-			return false;
+	checkConnection(soapURLPrimary,soapURLSecondary,function(url){
+
+		if(url==='down'){
+			callback(false);
 		}
-	}
-	var status = true;
-	require('readline').createInterface({
-		input: fs.createReadStream(filename),
-		terminal: false
-	}).on('line', function(line){
 
-		var args = {teamId: config.username,teamPassword:config.password, transactionDescription:line};
+		var status = true;
+		var counter = 0;
+		var holding = [];
+		require('readline').createInterface({
+			input: fs.createReadStream(filename),
+			terminal: false
+		}).on('line', function(line){
+			counter++;
+			var args = {teamId: config.username,teamPassword:config.password, transactionDescription:line};
 
-	// soap.createClient('http://www.webservicex.net/country.asmx?WSDL', function(err, client) {
+		// soap.createClient('http://www.webservicex.net/country.asmx?WSDL', function(err, client) {
+			soap.createClient(url, function(err, client) {
+				if(err){
+					console.log('Client connect error');
+					console.log(err);
+				}else{
+					client.ProcessTransaction(args,function(err, result) {
+						holding.push(0);
+						if(err){
+							console.log('Failed: ['+ args.transactionDescription+']');
+							callback(false);
+						}else{
+							console.log(result);
+							console.log('Success: ['+ args.transactionDescription+']');
+							if(holding.length == counter){
+								callback(true);
+							}
+						}
+
+					});
+				}
+
+			});
+		});
+	});
+};
+
+exports.clearBackoffice = function(callback){
+	checkConnection(soapURLPrimary,soapURLSecondary,function(url){
+
+		if(url==='down'){
+			callback(false);
+		}
+
+		var args = {teamId: config.username,teamPassword:config.password};
 		soap.createClient(url, function(err, client) {
 			if(err){
 				console.log('Client connect error');
 				console.log(err);
 			}else{
-				client.ProcessTransaction (args,function(err, result) {
+				client.Clear (args,function(err, result) {
 					if(err){
 						console.log(err);
-						status = false;
-						console.log('Failed: ['+ args.transactionDescription+']');
+						console.log('Clear BackOffice Log Failed');
+						callback(false);
 					}else{
-						console.log('Success: ['+ args.transactionDescription+']');
+						console.log('Clear BackOffice Log Success');
+						callback(true);
 					}
 
 				});
 			}
-			
 		});
-	}).on('close', function(){
-		callback(status);
-	});
-};
-
-exports.clearBackoffice = function(res,resp){
-	var url = soapURLPrimary;
-	if(!checkConnection(soapURLPrimary)){
-		console.log('Primary BackOffice is down');
-		if(checkConnection(soapURLSecondary)){
-			url = soapURLSecondary;
-		}else{
-			console.log('Both BackOffices are down');
-			return false;
-		}
-	}
-	var args = {teamId: config.username,teamPassword:config.password};
-	soap.createClient(url, function(err, client) {
-		if(err){
-			console.log('Client connect error');
-			console.log(err);
-		}else{
-			client.Clear (args,function(err, result) {
-				if(err){
-					console.log(err);
-					console.log('Clear BackOffice Log Failed');
-				}else{
-					console.log('Clear BackOffice Log Success');
-					resp.end('Success');
-				}
-
-			});
-		}
 	});
 
 };
 
-function checkConnection(url){
-	soap.createClient(url, function(err, client) {
-		if(err){
-			return false;
+function checkConnection(url1,url2,callback){
+	
+	soap.createClient(url1, function(err, client) {
+		if(!err){
+			callback(url1);
+		}else{
+			console.log('Primary BackOffice is down');
+			soap.createClient(url2, function(err, client) {
+			if(!err){
+				console.log('Secondary BackOffice is up');
+				callback(url2);
+			}else{
+				console.log('Both BackOffices are down');
+				callback('down');
+			}
+		});	
 		}
+		
 	});
-	return true;
+
 }

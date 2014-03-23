@@ -163,27 +163,27 @@ db.pool(function(pool){
 													});
 												}
 											});
-										}
-									});
-								}
-							});
-						}
-						connection.commit(function(err) {
-							if(err){
-								connection.rollback(function() {
-									console.log('rollback!');
-									throw err;
-								});
-							}
-							connection.release();
-							callback(true);
-							return;
-						});
-					});
-				});
-			});
+}
+});
+}
+});
+}
+connection.commit(function(err) {
+	if(err){
+		connection.rollback(function() {
+			console.log('rollback!');
+			throw err;
 		});
 	}
+	connection.release();
+	callback(true);
+	return;
+});
+});
+});
+});
+});
+}
 
 function validateCreditLimit(bid, callback) {
 	
@@ -294,23 +294,25 @@ exports.endTradingDay = function(){
 						connection.release();
 						if(!err){
 							console.log('Ask Cleared!');
-						}
-						if(config.sendtobackoffice){
-						// Send to BackOffice
-						bo.sendToBackOfficeEnd(function(status){
-							if(status){
-								console.log('Successfully sent to back office!');
+							bo.clearBackoffice(function(status){
+								if(status && config.sendtobackoffice){
+								// Send to BackOffice
+								bo.sendToBackOfficeEnd(function(status){
+									if(status){
+										console.log('Successfully sent to back office!');
+									}else{
+										console.log('Something went wrong with BackOffice operation!');
+									}
+								});
 							}else{
-								console.log('Something went wrong with BackOffice operation!');
+								// fs.unlink(config.matchedLocation, function (err) {
+								// 	if (err) throw err;
+								// 	console.log('Successfully deleted matched.log');
+								// });
 							}
 						});
-					}else{
-						fs.unlink(config.matchedLocation, function (err) {
-							if (err) throw err;
-							console.log('Successfully deleted matched.log');
-						});
-					}
-				});
+						}
+					});
 				}
 
 			});

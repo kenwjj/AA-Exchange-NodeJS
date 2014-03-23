@@ -68,7 +68,8 @@ if (cluster.isMaster && config.clustering) {
     app.post('/processbuy',auth,routes.processbuy);
     app.post('/processsell',auth,routes.processsell);
     app.get('/matchlog',routes.matchlog);
-    app.get('/clearbo',require('./routes/backoffice').clearBackoffice);
+    app.get('/clearbo',routes.clear);
+    app.get('/batchsend',routes.batchsend);
 
     /// catch 404 and forwarding to error handler
     // app.use(function(req, res, next) {
@@ -99,8 +100,8 @@ if (cluster.isMaster && config.clustering) {
         });
     });
     process.on('uncaughtException', function (err) {
-          console.log('Caught exception: ' + err);
-    });
+      console.log('Caught exception: ' + err);
+  });
     var debug = require('debug')('my-application');
     app.set('port', process.env.PORT || config.listenport);
 

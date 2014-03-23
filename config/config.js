@@ -54,8 +54,10 @@ config.secret = '1234567890QWERTY';		// Cookie Secret
 
 config.username ='G1T1';				// Backoffice username
 config.password ='pistachio';			// Backoffice pass
-config.soapURLPrimary = 'http://10.0.106.239:81/aabo/Service.asmx?wsdl';
-config.soapURLSecondary = 'http://10.4.12.30:81/aabo/Service.asmx?wsdl';
+// config.soapURLPrimary = 'http://10.0.106.239:81/aabo/Service.asmx?wsdl';
+// config.soapURLSecondary = 'http://10.4.12.30:81/aabo/Service.asmx?wsdl';
+config.soapURLPrimary = 'http://10.4.12.30:81/aabo/Service.asmx?wsdl';
+config.soapURLSecondary = 'http://10.0.106.239:81/aabo/Service.asmx?wsdl';
 
 config.matchedLocation = './logs/matched.log';		// Match file location
 config.rejectedLocation = './logs/rejected.log';	// Reject file location
