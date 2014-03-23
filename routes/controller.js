@@ -21,7 +21,7 @@ db.pool(function(pool){
 				
 				addBid(bid, function(){
 					logRejectedBuyOrder(bid);
-					callback(status);
+					callback(false);
 					return;
 				});
 			}
@@ -209,28 +209,28 @@ function validateCreditLimit(bid, callback) {
 						connection.release();
 						callback(false);
 					});
-				}
-
-				var query = 'select credit_limit from credit where userid = ?;';
-				connection.query(query,bid.username, function(err, docs) {
+				}else{
+					var query = 'select credit_limit from credit where userid = ?;';
+					connection.query(query,bid.username, function(err, docs) {
 
 					var query2 = 'update credit set credit_limit=? where userid=?';
-					connection.query(query2, [newAmt, bid.username],function(err, docs) {
-						if(err){
-							console.log('setCreditRemaining',err);
-						}
-						connection.commit(function(err) {
+						connection.query(query2, [newAmt, bid.username],function(err, docs) {
 							if(err){
-								connection.rollback(function() {
-									console.log('rollback!');
-									throw err;
-								});
+							console.log('setCreditRemaining',err);
 							}
-							connection.release();
-							callback(true);
+							connection.commit(function(err) {
+								if(err){
+									connection.rollback(function() {
+										console.log('rollback!');
+										throw err;
+									});
+								}
+								connection.release();
+								callback(true);
+							});
 						});
 					});
-				});
+				}
 			});
 		});
 	});
