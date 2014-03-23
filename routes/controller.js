@@ -48,7 +48,7 @@ db.pool(function(pool){
 							});
 						});
 					});
-					
+
 				});
 			}
 			
@@ -524,14 +524,28 @@ function sendRequest(host,matchString,callback){
 			res.on('data', function(chunk) {
 				result += chunk;
 			});
+			var status = false;
+			function TimeoutHandler(){
+				// clearTimeout(id);
+				if (!status){
+					console.log('Send Request timeout!');
+					callback();
+				}
+			}
+			var id;
+			id = setTimeout(TimeoutHandler, 2000);
+
 			res.on('end', function() {
-				// console.log('Match Log Sync Success');
+				status = true;
+				console.log('Match Log Sync Success');
+				callback();
 			});
 		}).on("error", function(e){
-			// config.syncmatch = false;
-			console.log("Send Request for matchlog not successful: " + e);
-		});
-		
+				// config.syncmatch = false;
+				callback();
+				console.log("Send Request for matchlog not successful: " + e);
+			});
+
 	}
 
 }
