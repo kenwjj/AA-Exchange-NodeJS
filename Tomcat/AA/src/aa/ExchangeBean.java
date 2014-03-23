@@ -57,12 +57,12 @@ public class ExchangeBean {
 	private static int latestPriceForNus = -1;
 	private static int latestPriceForNtu = -1;
 	private Timer timer = new Timer();
-	private TimerTask backOfficeCheck = new BackOfficeConnection();
+	//private TimerTask backOfficeCheck = new BackOfficeConnection();
 
 
 	public ExchangeBean(){
 		try{
-			timer.scheduleAtFixedRate(backOfficeCheck, 0, 1000);
+			//timer.scheduleAtFixedRate(backOfficeCheck, 0, 1000);
 			DbBean.prepareStatements();
 		}
 		catch(Exception e){
