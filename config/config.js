@@ -3,8 +3,8 @@ var config = {};
 config.mode = 'actual'; // local or actual
 config.clustering = true; // true or false
 config.database = 'exchange'; // database name
-config.syncmatch = false; //match log syncing options
-config.sendtobackoffice = false; // backoffice sending options
+config.syncmatch = true; //match log syncing options
+config.sendtobackoffice = true; // backoffice sending options
 config.creditlimit = 1000000;
 config.listenport = 8081;
 
@@ -61,7 +61,7 @@ config.matchedLocation = './logs/matched.log';		// Match file location
 config.rejectedLocation = './logs/rejected.log';	// Reject file location
 
 if(config.mode ==='local'){
-	config.hosts = ['localhost'];		
+	config.hosts = ['localhost'];
 }else{
 	config.hosts = ['192.168.0.2'];// File sync hosts used only if sync match is active
 }
