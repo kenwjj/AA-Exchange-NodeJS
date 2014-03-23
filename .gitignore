@@ -1,1 +1,3 @@
 views/index.ejs
+*.log
+Tomcat/AA/WebContent/WEB-INF/web.xml

@@ -12,7 +12,7 @@
     <env-entry>
         <env-entry-name>dbURL1</env-entry-name>
         <env-entry-type>java.lang.String</env-entry-type>        
-        <env-entry-value>jdbc:mysql://127.0.0.1:7000,192.168.0.2:7000/exchange</env-entry-value>
+        <env-entry-value>jdbc:mysql://127.0.0.1:7000,192.168.0.2:7000/exchange?failOverReadOnly=false</env-entry-value>
     </env-entry>
     <env-entry>
         <env-entry-name>dbUser</env-entry-name>

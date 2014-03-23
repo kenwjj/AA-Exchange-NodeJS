@@ -35,9 +35,6 @@ db.pool(function(pool){
 									throw err;
 								});
 							}
-							
-							// callback(true);
-							// return;
 						});
 						getUnfulfilledAsks(bid.stock,function(list){
 							if(list.length === 0){
@@ -160,36 +157,33 @@ db.pool(function(pool){
 																console.log('Something went wrong with BackOffice operation!');
 															}
 														});
-														
-
 														connection.release();
 														callback(true);
 														return;
 													});
-
 												}
 											});
-}
-});
-}
-});
-}
-connection.commit(function(err) {
-	if(err){
-		connection.rollback(function() {
-			console.log('rollback!');
-			throw err;
+										}
+									});
+								}
+							});
+						}
+						connection.commit(function(err) {
+							if(err){
+								connection.rollback(function() {
+									console.log('rollback!');
+									throw err;
+								});
+							}
+							connection.release();
+							callback(true);
+							return;
+						});
+					});
+				});
+			});
 		});
 	}
-	connection.release();
-	callback(true);
-	return;
-});
-});
-});
-});
-});
-}
 
 function validateCreditLimit(bid, callback) {
 	
@@ -354,15 +348,10 @@ exports.getAllCreditRemainingForDisplay = function (callback){
 			callback(docs);
 		});
 	});
-
 };
 
 exports.getUnfulfilledBids = function(stock,callback){
-	pool.getConnection(function (err, connection) {
-		connection.release();
-		callback(getUnfulfilledBids(stock,callback));
-	});
-
+	callback(getUnfulfilledBids(stock,callback));
 };
 function getUnfulfilledBids(stock,callback) {
 	pool.getConnection(function (err, connection) {
@@ -382,8 +371,8 @@ exports.getUnfulfilledAsks = function(stock,callback){
 function getUnfulfilledAsks(stock,callback) {
 	pool.getConnection(function (err, connection) {
 		var query = "Select * from ask where stock = ? and status = 'unfulfilled'";
-		connection.release();
 		connection.query(query,[stock], function(err, docs) {
+			connection.release();
 			callback(docs);
 		});
 	});
@@ -393,7 +382,6 @@ function getUnfulfilledAsks(stock,callback) {
 exports.getUnfulfilledBidsAll = function(callback){
 	pool.getConnection(function (err, connection) {
 		var query = "Select * from bid where status = 'unfulfilled'";
-
 		connection.query(query, function(err, docs) {
 			connection.release();
 			if(!err){
@@ -518,7 +506,7 @@ function logMatchedTransactions(match,rep) {
 }
 function sendRequest(host,matchString,callback){
 	var http = require('http');
-	var port = '8081';
+	var port = config.listenport;
 	for(var i = 0; i < config.hosts.length; i++){
 		host = config.hosts[i];
 		var options = {
@@ -529,14 +517,12 @@ function sendRequest(host,matchString,callback){
 		};
 		var req = http.get(options, function(res) {
 			var result = '';
-
 			res.on('data', function(chunk) {
 				result += chunk;
 			});
 			res.on('end', function() {
 				// console.log('Match Log Sync Success');
 			});
-
 		}).on("error", function(e){
 			console.log("Send Request for matchlog not successful: " + e);
 		});
