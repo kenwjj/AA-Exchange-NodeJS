@@ -30,13 +30,13 @@ exports.processbuy = function(req, res){
 	var username = req.session.username;
 	var stock = req.body.stock;
 	var tempBidPrice = parseFloat(req.body.bidprice);
-	var date = new Date();
+	// var date = new Date();
 	var bidPrice = tempBidPrice;
 	bid = {
 		stock: stock,
 		price: bidPrice,
-		username: username,
-		date:date
+		username: username
+		// date:date
 	};
 	async.series([
 		function(callback){
@@ -60,7 +60,7 @@ exports.processsell = function(req, res){
 		stock:stock,
 		price:askPrice,
 		username: username,
-		date: new Date()
+		// date: new Date()
 	};
 		// submit the sell request
 		async.series([

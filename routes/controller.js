@@ -17,6 +17,7 @@ db.pool(function(pool){
 			if (!okToContinue) {
 				status = false;
 				bid.status = 'rejected';
+				bid.date = new Date();
 				addBid(bid, function(){
 					logRejectedBuyOrder(bid);
 					callback(status);
@@ -58,6 +59,7 @@ db.pool(function(pool){
 		ask.status = 'unfulfilled';
 		pool.getConnection(function (err, connection) {
 			connection.beginTransaction(function(err) {
+				ask.date = new Date();
 				addAsk(ask,function(code){
 					connection.commit(function(err) {
 						if(err){
