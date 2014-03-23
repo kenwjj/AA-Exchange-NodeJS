@@ -4,6 +4,7 @@ config.mode = 'actual'; // local or actual
 config.clustering = true; // true or false
 config.database = 'exchange'; // database name
 config.syncmatch = true; //match log syncing options
+config.syncmatchtimeout = 500; //match log syncing options
 config.sendtobackoffice = true; // backoffice sending options
 config.creditlimit = 1000000;
 config.listenport = 8081;

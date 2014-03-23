@@ -14,10 +14,11 @@ db.pool(function(pool){
 	exports.placeNewBidAndAttemptMatch = function(bid,callback){
 		validateCreditLimit(bid, function(okToContinue){
 			var status;
+			bid.date = new Date();
 			if (!okToContinue) {
 				status = false;
 				bid.status = 'rejected';
-				bid.date = new Date();
+				
 				addBid(bid, function(){
 					logRejectedBuyOrder(bid);
 					callback(status);
@@ -311,8 +312,8 @@ exports.endTradingDay = function(){
 								// 	if (err) throw err;
 								// 	console.log('Successfully deleted matched.log');
 								// });
-							}
-						});
+						}
+					});
 						}
 					});
 				}
@@ -511,6 +512,10 @@ function logMatchedTransactions(match,rep) {
 function sendRequest(host,matchString,callback){
 	var http = require('http');
 	var port = config.listenport;
+	var counter = 0;
+	
+
+
 	for(var i = 0; i < config.hosts.length; i++){
 		host = config.hosts[i];
 		var options = {
@@ -520,19 +525,33 @@ function sendRequest(host,matchString,callback){
 			path: '/matchlog?match='+encodeURIComponent(matchString)
 		};
 		var req = http.get(options, function(res) {
+
+			var foo = setTimeout(function() {
+				req.emit("beep");
+			}, 1000);
 			var result = '';
 			res.on('data', function(chunk) {
 				result += chunk;
 			});
 			res.on('end', function() {
+				counter = 0;
 				// console.log('Match Log Sync Success');
 			});
 		}).on("error", function(e){
+			config.syncmatch = false;
 			console.log("Send Request for matchlog not successful: " + e);
 		});
+		req.on('beep',function(){ 
+			counter++;
+			if(counter > 3){
+				config.syncmatch = false;
+				console.log('off');
+			}
+		});
+		
 	}
-}
 
+}
 });
 
 
