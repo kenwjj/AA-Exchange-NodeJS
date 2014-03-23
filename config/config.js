@@ -66,6 +66,6 @@ config.rejectedLocation = './logs/rejected.log';	// Reject file location
 if(config.mode ==='local'){
 	config.hosts = ['localhost'];
 }else{
-	config.hosts = ['192.168.0.2'];// File sync hosts used only if sync match is active
+	config.hosts = ['192.168.0.3'];// File sync hosts used only if sync match is active
 }
 module.exports = config;
