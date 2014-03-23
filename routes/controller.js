@@ -152,13 +152,15 @@ db.pool(function(pool){
 														});
 														}
 														logMatchedTransactions(match);
-														bo.sendToBackOffice(match,function(status){
+														if(config.sendtobackoffice){
+															bo.sendToBackOffice(match,function(status){
 															if(status){
 																console.log('Successfully sent to back office!');
 															}else{
 																console.log('Something went wrong with BackOffice operation!');
 															}
 														});
+														}
 														connection.release();
 														callback(true);
 														return;
